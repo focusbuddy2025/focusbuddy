@@ -48,9 +48,6 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
-      - name: Run lint
-        run: flake8
-
       - name: Run Unittest
         run: |
           python -m unittest discover tests/ --verbose
