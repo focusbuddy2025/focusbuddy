@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- encoding=utf8 -*-
-import os
 import unittest
 
 from tests.test_utils import get_test_app
