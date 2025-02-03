@@ -45,9 +45,9 @@ class BlockListAPI(object):
             summary="Delete a blocklist url",
         )
 
-    async def list_blocklist(self, user_id: str, list_type: BlockListType = BlockListType.WORK):
+    async def list_blocklist(self, user_id: str):
         """List all blocklist."""
-        response = self.blocklist_service.list_blocklist(user_id, list_type)
+        response = self.blocklist_service.list_blocklist(user_id)
         return ListBlockListResponse(blocklist=response, status=ResponseStatus.SUCCESS)
 
     async def add_blocklist(self, user_id: str, request: AddBlockListRequest):

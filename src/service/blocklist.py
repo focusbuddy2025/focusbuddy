@@ -24,10 +24,10 @@ class BlockListService(object):
         self.cfg = cfg
         self.db = MongoDB().db
 
-    def list_blocklist(self, user_id: str, list_type: BlockListType) -> list[BlockListResponse]:
+    def list_blocklist(self, user_id: str) -> list[BlockListResponse]:
         """List all blocklist."""
         collection = self.db.get_collection("blocklist")
-        query = {"user_id": user_id, "list_type": list_type}
+        query = {"user_id": user_id}
         blocklist_cursor = collection.find(query)
         blocklist = [
             BlockListResponse(id=str(doc["_id"]), domain=doc["domain"])
