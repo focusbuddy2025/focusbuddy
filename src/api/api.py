@@ -37,5 +37,5 @@ class ListBlockListResponse(BaseModel):
 class EditBlockListResponse(BaseModel):
     status: ResponseStatus = ResponseStatus.SUCCESS
     user_id: str
-    website_url: str
+    domain: str
     list_type: BlockListType

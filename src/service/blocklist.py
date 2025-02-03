@@ -34,22 +34,22 @@ class BlockListService(object):
 
         return ListBlockListResponse(blocklist=blocklist, status=ResponseStatus.SUCCESS)
 
-    def add_blocklist(self, user_id: str, website_url: str, list_type: BlockListType) -> EditBlockListResponse:
+    def add_blocklist(self, user_id: str, domain: str, list_type: BlockListType) -> EditBlockListResponse:
         """Add an url to blocklist."""
         collection = self.db.get_collection("blocklist")
 
         # Validate the website URL
-        if not URL_REGEX.match(website_url):
+        if not URL_REGEX.match(domain):
             return EditBlockListResponse(
                 status=ResponseStatus.FAILED,
                 user_id=user_id,
-                website_url=website_url,
+                domain=domain,
                 list_type=list_type
             )
         
         query = {
             "user_id": user_id,
-            "website_url": website_url,
+            "domain": domain,
             "list_type": list_type
         }
         update = {"$setOnInsert": query}
@@ -60,14 +60,14 @@ class BlockListService(object):
             return EditBlockListResponse(
                 status=ResponseStatus.FAILED, 
                 user_id=user_id,
-                website_url=website_url,
+                domain=domain,
                 list_type=list_type
             )
 
         return EditBlockListResponse(
             status=ResponseStatus.SUCCESS,
             user_id=user_id,
-            website_url=website_url,
+            domain=domain,
             list_type=list_type
         )
     
@@ -79,7 +79,7 @@ class BlockListService(object):
             return EditBlockListResponse(
                 status=ResponseStatus.FAILED, 
                 user_id="", 
-                website_url="", 
+                domain="", 
                 list_type=0
             )
         
@@ -90,12 +90,12 @@ class BlockListService(object):
             return EditBlockListResponse(
                 status=ResponseStatus.FAILED,
                 user_id=user_id,
-                website_url="",
+                domain="",
                 list_type=0
             )
         return EditBlockListResponse(
             status=ResponseStatus.SUCCESS,
             user_id=user_id,
-            website_url=entry["domain"],
+            domain=entry["domain"],
             list_type=entry["list_type"]
         )
