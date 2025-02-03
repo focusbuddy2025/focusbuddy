@@ -7,6 +7,7 @@ from src.api import ResponseStatus, BlockListType
 from src.db import MongoDB  # Import the MongoDB singleton
 from src.service.blocklist import BlockListService
 
+
 class TestBlockList(unittest.TestCase):
     app = get_test_app()
     db = MongoDB().db
@@ -14,7 +15,6 @@ class TestBlockList(unittest.TestCase):
     def test_list_blocklist(self):
         response = self.app.get("/api/v1/blocklist/test")
         assert response.status_code == 200
-        # print(response.json())
         assert response.json() == {
             "blocklist": [],
             "status": ResponseStatus.SUCCESS,
@@ -98,8 +98,9 @@ class TestBlockList(unittest.TestCase):
             ],
             "status": ResponseStatus.SUCCESS,
         }
-    
+
     """Test add_blocklist."""
+
     def setUp(self):
         """Setup mock database before each test."""
         self.db = MongoDB().db
@@ -116,19 +117,15 @@ class TestBlockList(unittest.TestCase):
             domain="https://example.com",
             list_type=BlockListType.WORK
         )
-        assert response.model_dump() == {
-            "status": ResponseStatus.SUCCESS,
-            "user_id": "test_user",
-            "domain": "https://example.com",
-            "list_type": BlockListType.WORK
-        }
-    
+        assert response[0] != ""  # Should return a valid ObjectId
+        assert response[1] is True  # Should return True
+
     def test_add_duplicate_website(self):
         """Ensure duplicate website additions return FAILED."""
         self.service.add_blocklist("test_user", "https://example.com", BlockListType.WORK)
         response = self.service.add_blocklist("test_user", "https://example.com", BlockListType.WORK)
 
-        assert response.status == ResponseStatus.FAILED
+        assert response[1] == False  # Should return False
 
         collection = self.db.get_collection("blocklist")
         count = collection.count_documents({"user_id": "test_user", "domain": "https://example.com"})
@@ -158,8 +155,8 @@ class TestBlockList(unittest.TestCase):
 
     def test_add_invalid_url(self):
         """Test adding an invalid URL returns FAILED."""
-        response = self.service.add_blocklist("test_user", "invalid_url", BlockListType.WORK)
-        assert response.status == ResponseStatus.FAILED
+        response = self.app.post("/api/v1/blocklist/test_user", json={"domain": "invalid_url", "list_type": BlockListType.WORK})
+        assert response.status_code == 400
 
         # Ensure no entry was added
         count = self.db.get_collection("blocklist").count_documents({"user_id": "test_user", "domain": "invalid_url"})
@@ -182,6 +179,7 @@ class TestBlockList(unittest.TestCase):
         assert count == 2  # Should allow different list types
 
     """Test delete_blocklist."""
+
     def test_delete_valid_entry(self):
         """Test deleting an existing blocklist entry."""
         collection = self.db.get_collection("blocklist")
@@ -195,29 +193,20 @@ class TestBlockList(unittest.TestCase):
         inserted_id = collection.insert_one(test_entry).inserted_id
 
         # Delete the entry
-        response = self.service.delete_blocklist("test_user", str(inserted_id))
-        assert response.status == ResponseStatus.SUCCESS
-        assert response.domain == "example.com"
-        assert response.list_type == BlockListType.WORK
-
+        response = self.app.delete(f"/api/v1/blocklist/test_user/{str(inserted_id)}")
+        assert response.status_code == 204
         # Verify the entry is actually removed
         assert collection.count_documents({"_id": inserted_id}) == 0
 
     def test_delete_non_existent_entry(self):
         """Test deleting a non-existent blocklist entry."""
-        response = self.service.delete_blocklist("test_user", str(ObjectId()))  # Random ObjectId
-        assert response.status == ResponseStatus.FAILED
-        assert response.user_id == "test_user"
-        assert response.domain == ""
-        assert response.list_type == 0
+        response = self.app.delete(f"/api/v1/blocklist/test_user/{str(ObjectId())}") # Random ObjectId
+        assert response.status_code == 404
 
     def test_delete_invalid_object_id(self):
         """Test deleting an entry with an invalid ObjectId format."""
-        response = self.service.delete_blocklist("test_user", "invalid_id")
-        assert response.status == ResponseStatus.FAILED
-        assert response.user_id == ""
-        assert response.domain == ""
-        assert response.list_type == 0
+        response = self.app.delete("/api/v1/blocklist/test_user/invalid_id")
+        assert response.status_code == 400
 
     def test_delete_entry_belongs_to_another_user(self):
         """Test that a user cannot delete another user's blocklist entry."""
@@ -232,14 +221,8 @@ class TestBlockList(unittest.TestCase):
         inserted_id = collection.insert_one(test_entry).inserted_id
 
         # "test_user" tries to delete it
-        response = self.service.delete_blocklist("test_user", str(inserted_id))
-        assert response.status == ResponseStatus.FAILED
-        assert response.user_id == "test_user"
-        assert response.domain == ""
-        assert response.list_type == 0
+        response = self.app.delete(f"/api/v1/blocklist/test_user/{str(inserted_id)}")
+        assert response.status_code == 404
 
         # Ensure the entry still exists
         assert collection.count_documents({"_id": inserted_id}) == 1
-
-if __name__ == "__main__":
-    unittest.main()

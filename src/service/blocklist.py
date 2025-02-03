@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # -*- encoding=utf8 -*-
 
-from src.config import Config
-from src.api import ListBlockListResponse, BlockListType, ResponseStatus, BlockListResponse, EditBlockListResponse
-from src.db import MongoDB
 import re
+
 from bson import ObjectId
 
+from src.api import BlockListType, BlockListResponse
+from src.config import Config
+from src.db import MongoDB
 
 URL_REGEX = re.compile(
     r"^(https?:\/\/)?"  # Optional http or https
@@ -15,6 +16,7 @@ URL_REGEX = re.compile(
     r"(\/[^\s]*)?$"  # Optional path (e.g., /path/to/page)
 )
 
+
 class BlockListService(object):
     """class to encapsulate the blocklist service."""
 
@@ -22,7 +24,7 @@ class BlockListService(object):
         self.cfg = cfg
         self.db = MongoDB().db
 
-    def list_blocklist(self, user_id: str, list_type: BlockListType) -> ListBlockListResponse:
+    def list_blocklist(self, user_id: str, list_type: BlockListType) -> list[BlockListResponse]:
         """List all blocklist."""
         collection = self.db.get_collection("blocklist")
         query = {"user_id": user_id, "list_type": list_type}
@@ -32,21 +34,12 @@ class BlockListService(object):
             for doc in blocklist_cursor
         ]
 
-        return ListBlockListResponse(blocklist=blocklist, status=ResponseStatus.SUCCESS)
+        return blocklist
 
-    def add_blocklist(self, user_id: str, domain: str, list_type: BlockListType) -> EditBlockListResponse:
+    def add_blocklist(self, user_id: str, domain: str, list_type: BlockListType) -> (str, bool):
         """Add an url to blocklist."""
         collection = self.db.get_collection("blocklist")
 
-        # Validate the website URL
-        if not URL_REGEX.match(domain):
-            return EditBlockListResponse(
-                status=ResponseStatus.FAILED,
-                user_id=user_id,
-                domain=domain,
-                list_type=list_type
-            )
-        
         query = {
             "user_id": user_id,
             "domain": domain,
@@ -57,45 +50,14 @@ class BlockListService(object):
 
         # if it already exists, update nothing and return failed
         if result.matched_count > 0:
-            return EditBlockListResponse(
-                status=ResponseStatus.FAILED, 
-                user_id=user_id,
-                domain=domain,
-                list_type=list_type
-            )
+            return "", False
 
-        return EditBlockListResponse(
-            status=ResponseStatus.SUCCESS,
-            user_id=user_id,
-            domain=domain,
-            list_type=list_type
-        )
-    
-    def delete_blocklist(self, user_id:str, blocklist_id: str) -> EditBlockListResponse:
+        return str(result.upserted_id), True
+
+    def delete_blocklist(self, user_id: str, blocklist_id: str) -> bool:
         """Delete an url from blocklist."""
         collection = self.db.get_collection("blocklist")
 
-        if not ObjectId.is_valid(blocklist_id):
-            return EditBlockListResponse(
-                status=ResponseStatus.FAILED, 
-                user_id="", 
-                domain="", 
-                list_type=0
-            )
-        
-        entry = collection.find_one({"_id": ObjectId(blocklist_id), "user_id": user_id})
         result = collection.delete_one({"_id": ObjectId(blocklist_id), "user_id": user_id})
-        # if nothing was deleted, return a failed response
-        if result.deleted_count == 0:
-            return EditBlockListResponse(
-                status=ResponseStatus.FAILED,
-                user_id=user_id,
-                domain="",
-                list_type=0
-            )
-        return EditBlockListResponse(
-            status=ResponseStatus.SUCCESS,
-            user_id=user_id,
-            domain=entry["domain"],
-            list_type=entry["list_type"]
-        )
+
+        return result.deleted_count > 0

@@ -34,8 +34,15 @@ class ListBlockListResponse(BaseModel):
     blocklist: List[BlockListResponse]
     status: ResponseStatus = ResponseStatus.SUCCESS
 
+
 class EditBlockListResponse(BaseModel):
     status: ResponseStatus = ResponseStatus.SUCCESS
     user_id: str
+    domain: str
+    list_type: BlockListType
+    id: str
+
+
+class AddBlockListRequest(BaseModel):
     domain: str
     list_type: BlockListType
