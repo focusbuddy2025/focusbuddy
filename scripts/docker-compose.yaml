@@ -12,8 +12,7 @@ services:
         condition: service_healthy
     environment:
       DB_HOST: mongodb
-    networks:
-      - node-network
+      APP_HOST: 0.0.0.0
 
   mongodb:
     image: mongo:latest
@@ -23,8 +22,6 @@ services:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: admin
       MONGO_INITDB_DATABASE: focusbuddy
-    networks:
-      - node-network
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
       interval: 10s
@@ -32,6 +29,3 @@ services:
       start_period: 30s
       timeout: 10s
 
-networks:
-  node-network:
-    driver: bridge
