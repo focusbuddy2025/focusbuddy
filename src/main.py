@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # -*- encoding=utf8 -*-
 
+import sys
+
+sys.path.append(".")
+
 import uvicorn
 
 from src.config import Config
