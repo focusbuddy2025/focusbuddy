@@ -6,7 +6,7 @@ from bson import ObjectId
 from fastapi import FastAPI, APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 
-from src.api import ListBlockListResponse, BlockListType, EditBlockListResponse, ResponseStatus, AddBlockListRequest
+from src.api import ListBlockListResponse, EditBlockListResponse, ResponseStatus, AddBlockListRequest
 from src.config import api_version, Config
 from src.rest.error import BLOCKLIST_NOT_FOUND, BLOCKLIST_IS_INVALID, BLOCKLIST_ID_INVALID, BLOCKLIST_ALREADY_EXISTS
 from src.service import BlockListService
