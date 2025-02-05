@@ -30,7 +30,7 @@ class BlockListService(object):
         query = {"user_id": user_id}
         blocklist_cursor = collection.find(query)
         blocklist = [
-            BlockListResponse(id=str(doc["_id"]), domain=doc["domain"])
+            BlockListResponse(id=str(doc["_id"]), domain=doc["domain"], list_type=doc["list_type"])
             for doc in blocklist_cursor
         ]
 

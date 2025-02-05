@@ -27,7 +27,7 @@ class BlockListModel(BaseModel):
 class BlockListResponse(BaseModel):
     id: str
     domain: str
-    icon: str = None
+    list_type: BlockListType
 
 
 class ListBlockListResponse(BaseModel):
