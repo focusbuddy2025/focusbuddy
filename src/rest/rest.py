@@ -3,13 +3,24 @@
 import re
 
 from bson import ObjectId
-from fastapi import FastAPI, APIRouter, HTTPException, status
+from fastapi import APIRouter, FastAPI, HTTPException, status
 from fastapi.responses import JSONResponse
 
-from src.api import ListBlockListResponse, EditBlockListResponse, ResponseStatus, AddBlockListRequest
-from src.config import api_version, Config
-from src.rest.error import BLOCKLIST_NOT_FOUND, BLOCKLIST_IS_INVALID, BLOCKLIST_ID_INVALID, BLOCKLIST_ALREADY_EXISTS
-from src.service import BlockListService
+from src.api import (
+    AddBlockListRequest,
+    AnalyticsListResponse,
+    EditBlockListResponse,
+    ListBlockListResponse,
+    ResponseStatus,
+)
+from src.config import Config, api_version
+from src.rest.error import (
+    BLOCKLIST_ALREADY_EXISTS,
+    BLOCKLIST_ID_INVALID,
+    BLOCKLIST_IS_INVALID,
+    BLOCKLIST_NOT_FOUND,
+)
+from src.service import AnalyticsListService, BlockListService
 
 
 class BlockListAPI(object):
@@ -53,21 +64,37 @@ class BlockListAPI(object):
     async def add_blocklist(self, user_id: str, request: AddBlockListRequest):
         """Add an url to blocklist."""
         if not self.validate_domain(request.domain):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=BLOCKLIST_IS_INVALID)
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=BLOCKLIST_IS_INVALID
+            )
 
-        new_id, ok = self.blocklist_service.add_blocklist(user_id, request.domain, request.list_type)
+        new_id, ok = self.blocklist_service.add_blocklist(
+            user_id, request.domain, request.list_type
+        )
         if not ok:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=BLOCKLIST_ALREADY_EXISTS)
-        return EditBlockListResponse(user_id=user_id, domain=request.domain, list_type=request.list_type, status=ResponseStatus.SUCCESS, id=new_id)
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=BLOCKLIST_ALREADY_EXISTS
+            )
+        return EditBlockListResponse(
+            user_id=user_id,
+            domain=request.domain,
+            list_type=request.list_type,
+            status=ResponseStatus.SUCCESS,
+            id=new_id,
+        )
 
     async def delete_blocklist(self, user_id: str, blocklist_id: str):
         """Delete an url from blocklist."""
         if not ObjectId.is_valid(blocklist_id):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=BLOCKLIST_ID_INVALID)
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=BLOCKLIST_ID_INVALID
+            )
 
         ok = self.blocklist_service.delete_blocklist(user_id, blocklist_id)
         if not ok:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=BLOCKLIST_NOT_FOUND)
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail=BLOCKLIST_NOT_FOUND
+            )
         return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content={})
 
     @staticmethod
@@ -82,10 +109,36 @@ class BlockListAPI(object):
         return url_regex.match(domain)
 
 
+class AnalyticsListAPI(object):
+    """class to encapsulate the analytics API endpoint."""
+
+    def __init__(self, cfg: Config):
+        self.router = APIRouter()
+        self.analyticslist_service = AnalyticsListService(cfg)
+        self._register_routes()
+
+    def _register_routes(self):
+        """Register API routes."""
+        self.router.add_api_route(
+            path="/analytics/{user_id}",
+            endpoint=self.list_analytics,
+            methods=["GET"],
+            response_model=AnalyticsListResponse,
+            summary="List all analytics for user",
+        )
+
+    async def list_analytics(self, user_id: str):
+        """List all analytics for user."""
+        response = self.analyticslist_service.get_analytics(user_id)
+        return response
+
+
 def create_app(cfg: Config):
     _app = FastAPI()
     blocklist_api = BlockListAPI(cfg)
+    analyticslist_api = AnalyticsListAPI(cfg)
     _app.include_router(blocklist_api.router, prefix=api_version)
+    _app.include_router(analyticslist_api.router, prefix=api_version)
     return _app
 
 
