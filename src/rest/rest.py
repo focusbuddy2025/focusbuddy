@@ -3,8 +3,7 @@
 import re
 
 from bson import ObjectId
-from fastapi import APIRouter, FastAPI, HTTPException, status
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, FastAPI, HTTPException, Response, status
 
 from src.api import (
     AddBlockListRequest,
@@ -95,7 +94,7 @@ class BlockListAPI(object):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail=BLOCKLIST_NOT_FOUND
             )
-        return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content={})
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @staticmethod
     def validate_domain(domain: str):

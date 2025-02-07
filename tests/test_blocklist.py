@@ -35,7 +35,7 @@ class TestBlockList(unittest.TestCase):
         # print(response.json())
         assert response.json() == {
             "blocklist": [
-                {"id": str(inserted_id), "domain": "example.com", "icon": None}
+                {"id": str(inserted_id), "domain": "example.com", "list_type": BlockListType.WORK}
             ],
             "status": ResponseStatus.SUCCESS,
         }
@@ -54,8 +54,8 @@ class TestBlockList(unittest.TestCase):
 
         assert response.json() == {
             "blocklist": [
-                {"id": str(inserted_ids[0]), "domain": "example1.com", "icon": None},
-                {"id": str(inserted_ids[1]), "domain": "example2.com", "icon": None},
+                {"id": str(inserted_ids[0]), "domain": "example1.com", "list_type": BlockListType.WORK},
+                {"id": str(inserted_ids[1]), "domain": "example2.com", "list_type": BlockListType.WORK},
             ],
             "status": ResponseStatus.SUCCESS,
         }
@@ -74,7 +74,7 @@ class TestBlockList(unittest.TestCase):
         # print(response.json())
         assert response.json() == {
             "blocklist": [
-                {"id": str(entry["_id"]), "domain": "example2.com", 'icon': None}
+                {"id": str(entry["_id"]), "domain": "example2.com", "list_type": BlockListType.WORK}
                 for entry in collection.find({"user_id": "user"})
             ],
             "status": ResponseStatus.SUCCESS,
@@ -137,7 +137,7 @@ class TestBlockList(unittest.TestCase):
         # Expected response
         collection = self.db.get_collection("blocklist")
         expected_blocklist = [
-            {"id": str(entry["_id"]), "domain": entry["domain"], "icon": None}
+            {"id": str(entry["_id"]), "domain": entry["domain"], "list_type": entry["list_type"]}
             for entry in collection.find({"user_id": "test"})
         ]
         # print(response.json())
