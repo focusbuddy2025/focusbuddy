@@ -12,14 +12,12 @@ analytics_cron = AnalyticsCron(cfg=Config)
 
 
 @app.command()
-@staticmethod
 def reset_analytics(period: str = typer.Option(..., prompt=True)):
     print(f"[green] Resetting analytics for the {period}[/green]")
     analytics_cron.reset_collection(period)
 
 
 @app.command()
-@staticmethod
 def update_analytics():
     print("[green] Updating analytics[/green]")
     analytics_cron.update_collection()

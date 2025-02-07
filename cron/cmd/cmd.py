@@ -10,7 +10,7 @@ from pymongo import errors
 from cron.config import Config
 from cron.db import MongoDB
 
-logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+logging.basicConfig(stream=sys.stdout, level=logging.WARN)
 
 
 class AnalyticsCron(object):
@@ -143,6 +143,6 @@ class AnalyticsCron(object):
                     details="could not update daily user stats",
                 )
             test_val = self.db.analytics.find_one({"user_id": session_data["user_id"]})
-            logging.info(f"updated value {test_val}")
+            logging.debug(f"updated value {test_val}")
 
         return
