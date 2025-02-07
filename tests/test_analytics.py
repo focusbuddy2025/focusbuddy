@@ -23,6 +23,7 @@ class TestAnalytics(unittest.TestCase):
         assert response.model_dump() == {
             "daily": 0,
             "weekly": 0,
+            "completed_sessions": 0,
             "status": ResponseStatus.FAILED,
         }
 
@@ -38,6 +39,7 @@ class TestAnalytics(unittest.TestCase):
             "user_id": "test_user",
             "daily": 120,
             "weekly": 600,
+            "completed_sessions": 2,
             "active": True,
         }
 
@@ -49,5 +51,6 @@ class TestAnalytics(unittest.TestCase):
         assert response.model_dump() == {
             "daily": 120,
             "weekly": 600,
+            "completed_sessions": 2,
             "status": ResponseStatus.SUCCESS,
         }

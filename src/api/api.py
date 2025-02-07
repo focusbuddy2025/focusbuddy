@@ -52,4 +52,5 @@ class AddBlockListRequest(BaseModel):
 class AnalyticsListResponse(BaseModel):
     daily: int = 0
     weekly: int = 0
+    completed_sessions: int = 0
     status: ResponseStatus = ResponseStatus.SUCCESS
