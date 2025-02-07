@@ -2,7 +2,7 @@
 # -*- encoding=utf8 -*-
 import os
 
-from pymongo import ASCENDING, MongoClient
+from pymongo import ASCENDING
 from testcontainers.mongodb import MongoDbContainer
 
 from src.config import Config
@@ -45,9 +45,6 @@ class MongoDB:
                 "analytics",
                 [
                     ("user_id", ASCENDING),
-                    ("daily", ASCENDING),
-                    ("weekly", ASCENDING),
-                    ("completed_sessions", ASCENDING),
                 ],
             )
         return cls._instance

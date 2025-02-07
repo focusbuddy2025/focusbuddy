@@ -3,22 +3,26 @@
 
 import typer
 from rich import print
+from src.config import Config
 
-from cron.cmd import reset_collection, update_collection
+from cron.cmd import AnalyticsCron
 
 app = typer.Typer()
+analytics_cron = AnalyticsCron(cfg=Config)
 
 
 @app.command()
+@staticmethod
 def reset_analytics(period: str = typer.Option(..., prompt=True)):
     print(f"[green] Resetting analytics for the {period}[/green]")
-    reset_collection(period)
+    analytics_cron.reset_collection(period)
 
 
 @app.command()
+@staticmethod
 def update_analytics():
     print("[green] Updating analytics[/green]")
-    update_collection()
+    analytics_cron.update_collection()
 
 
 if __name__ == "__main__":
