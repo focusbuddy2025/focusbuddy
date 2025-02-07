@@ -74,6 +74,7 @@ def update_collection():
                 "$set": {
                     "user_id": session_data["user_id"],
                     "daily": session_data["duartion"],
+                    "completed_sessions": 1,
                 }
             }
 
@@ -83,6 +84,8 @@ def update_collection():
             update_operation_daily = {
                 "$set": {
                     "daily": current_user_analytics["daily"] + session_data["duartion"],
+                    "completed_sessions": current_user_analytics["completed_sessions"]
+                    + 1,
                 }
             }
 

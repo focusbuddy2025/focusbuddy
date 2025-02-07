@@ -46,6 +46,7 @@ class TestAnalyticsCronReset(unittest.TestCase):
                 "user_id": "test_user_1",
                 "daily": 120,
                 "weekly": 600,
+                "completed_sessions": 1,
                 "active": True,
             },
             {
@@ -53,6 +54,7 @@ class TestAnalyticsCronReset(unittest.TestCase):
                 "user_id": "test_user_2",
                 "daily": 200,
                 "weekly": 800,
+                "completed_sessions": 2,
                 "active": True,
             },
             {
@@ -60,6 +62,7 @@ class TestAnalyticsCronReset(unittest.TestCase):
                 "user_id": "test_user_3",
                 "daily": 300,
                 "weekly": 1000,
+                "completed_sessions": 10,
                 "active": True,
             },
         ]
@@ -71,10 +74,12 @@ class TestAnalyticsCronReset(unittest.TestCase):
         reset_results = analytics_col.find({})
         for result in reset_results:
             assert result["daily"] == 0
+            assert result["weekly"] != 0
 
         reset_collection(period="weekly")
         reset_results = analytics_col.find({})
         for result in reset_results:
+            assert result["daily"] == 0
             assert result["weekly"] == 0
 
 
@@ -147,6 +152,7 @@ class TestAnalyticsCronUpdate(unittest.TestCase):
                 "user_id": "test_user_1",
                 "daily": 120,
                 "weekly": 600,
+                "completed_sessions": 1,
                 "active": True,
             }
         )
@@ -156,6 +162,7 @@ class TestAnalyticsCronUpdate(unittest.TestCase):
                 "user_id": "test_user_2",
                 "daily": 200,
                 "weekly": 800,
+                "completed_sessions": 2,
                 "active": True,
             }
         )
@@ -165,6 +172,7 @@ class TestAnalyticsCronUpdate(unittest.TestCase):
                 "user_id": "test_user_3",
                 "daily": 300,
                 "weekly": 1000,
+                "completed_sessions": 5,
                 "active": True,
             }
         )
@@ -176,10 +184,13 @@ class TestAnalyticsCronUpdate(unittest.TestCase):
 
         assert update_results[0]["daily"] == 3720
         assert update_results[0]["weekly"] == 4200
+        assert update_results[0]["completed_sessions"] == 2
         assert update_results[1]["daily"] == 3800
         assert update_results[1]["weekly"] == 4400
+        assert update_results[1]["completed_sessions"] == 3
         assert update_results[2]["daily"] == 3900
         assert update_results[2]["weekly"] == 4600
+        assert update_results[2]["completed_sessions"] == 6
 
         max_session_id = session_counter_col.find_one({})
         assert max_session_id["session_id"] == 3
@@ -243,6 +254,7 @@ class TestAnalyticsCronUpdate(unittest.TestCase):
                 "user_id": "test_user_4",
                 "daily": 120,
                 "weekly": 600,
+                "completed_sessions": 1,
                 "active": True,
             }
         )
@@ -252,6 +264,7 @@ class TestAnalyticsCronUpdate(unittest.TestCase):
                 "user_id": "test_user_5",
                 "daily": 200,
                 "weekly": 800,
+                "completed_sessions": 2,
                 "active": True,
             }
         )
@@ -263,16 +276,22 @@ class TestAnalyticsCronUpdate(unittest.TestCase):
 
         assert update_results[0]["daily"] == 3720
         assert update_results[0]["weekly"] == 4200
+        assert update_results[0]["completed_sessions"] == 2
         assert update_results[1]["daily"] == 3800
         assert update_results[1]["weekly"] == 4400
+        assert update_results[1]["completed_sessions"] == 3
         assert update_results[2]["daily"] == 3900
         assert update_results[2]["weekly"] == 4600
+        assert update_results[2]["completed_sessions"] == 6
         assert update_results[3]["daily"] == 120
         assert update_results[3]["weekly"] == 600
+        assert update_results[3]["completed_sessions"] == 1
         assert update_results[4]["daily"] == 200
         assert update_results[4]["weekly"] == 800
+        assert update_results[4]["completed_sessions"] == 2
         assert update_results[5]["daily"] == 600
         assert update_results[5]["weekly"] == 600
+        assert update_results[5]["completed_sessions"] == 1
 
 
 class TestAnalyticsCLICronReset(unittest.TestCase):
@@ -418,6 +437,7 @@ class TestAnalyticsCLICronUpdate(unittest.TestCase):
                 "user_id": "test_user_1",
                 "daily": 120,
                 "weekly": 600,
+                "completed_sessions": 1,
                 "active": True,
             }
         )
@@ -427,6 +447,7 @@ class TestAnalyticsCLICronUpdate(unittest.TestCase):
                 "user_id": "test_user_2",
                 "daily": 200,
                 "weekly": 800,
+                "completed_sessions": 2,
                 "active": True,
             }
         )
@@ -436,6 +457,7 @@ class TestAnalyticsCLICronUpdate(unittest.TestCase):
                 "user_id": "test_user_3",
                 "daily": 300,
                 "weekly": 1000,
+                "completed_sessions": 5,
                 "active": True,
             }
         )
@@ -508,6 +530,7 @@ class TestAnalyticsCLICronUpdate(unittest.TestCase):
                 "user_id": "test_user_4",
                 "daily": 120,
                 "weekly": 600,
+                "completed_sessions": 1,
                 "active": True,
             }
         )
@@ -517,6 +540,7 @@ class TestAnalyticsCLICronUpdate(unittest.TestCase):
                 "user_id": "test_user_5",
                 "daily": 200,
                 "weekly": 800,
+                "completed_sessions": 2,
                 "active": True,
             }
         )

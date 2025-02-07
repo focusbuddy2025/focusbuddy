@@ -34,11 +34,12 @@ class MongoDB:
                 )
             cls._instance.db = cls._instance.client[cls._instance.cfg.db]
             cls._instance._init_index(
-                "blocklist",
+                "analytics",
                 [
                     ("user_id", ASCENDING),
-                    ("domain", ASCENDING),
-                    ("list_type", ASCENDING),
+                    ("daily", ASCENDING),
+                    ("weekly", ASCENDING),
+                    ("completed_sessions", ASCENDING),
                 ],
             )
         return cls._instance
