@@ -20,11 +20,12 @@ class AnalyticsListService(object):
         analytics_result: dict = collection.find_one(query)
         if analytics_result is None:
             return AnalyticsListResponse(
-                daily=0, weekly=0, status=ResponseStatus.FAILED
+                daily=0, weekly=0, completed_sessions=0, status=ResponseStatus.FAILED
             )
 
         return AnalyticsListResponse(
             daily=analytics_result["daily"],
             weekly=analytics_result["weekly"],
+            completed_sessions=analytics_result["completed_sessions"],
             status=ResponseStatus.SUCCESS,
         )
