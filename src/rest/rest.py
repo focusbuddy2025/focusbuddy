@@ -37,15 +37,14 @@ class BlockListAPI(object):
             summary="List all blocklist",
         )
         self.router.add_api_route(
-            path="/blocklist/{user_id}",
+            path="/blocklist",
             endpoint=self.add_blocklist,
             methods=["POST"],
             response_model=EditBlockListResponse,
             summary="Add a blocklist url",
         )
-
         self.router.add_api_route(
-            path="/blocklist/{user_id}/{blocklist_id}",
+            path="/blocklist/{blocklist_id}",
             endpoint=self.delete_blocklist,
             methods=["DELETE"],
             response_model=EditBlockListResponse,
@@ -60,21 +59,25 @@ class BlockListAPI(object):
         response = self.blocklist_service.list_blocklist(user_id)
         return ListBlockListResponse(blocklist=response, status=ResponseStatus.SUCCESS)
 
-    async def add_blocklist(self, user_id: str, request: AddBlockListRequest):
+    async def add_blocklist(self, request: AddBlockListRequest, x_auth_token: Annotated[str, Header()] = None):
         """Add an url to blocklist."""
         if not self.validate_domain(request.domain):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=BLOCKLIST_IS_INVALID)
-
+        user_id, ok = self.validate_token(x_auth_token)
+        if not ok:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN)
         new_id, ok = self.blocklist_service.add_blocklist(user_id, request.domain, request.list_type)
         if not ok:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=BLOCKLIST_ALREADY_EXISTS)
         return EditBlockListResponse(user_id=user_id, domain=request.domain, list_type=request.list_type, status=ResponseStatus.SUCCESS, id=new_id)
 
-    async def delete_blocklist(self, user_id: str, blocklist_id: str):
+    async def delete_blocklist(self, blocklist_id: str, x_auth_token: Annotated[str, Header()] = None):
         """Delete an url from blocklist."""
         if not ObjectId.is_valid(blocklist_id):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=BLOCKLIST_ID_INVALID)
-
+        user_id, ok = self.validate_token(x_auth_token)
+        if not ok:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN)
         ok = self.blocklist_service.delete_blocklist(user_id, blocklist_id)
         if not ok:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=BLOCKLIST_NOT_FOUND)
@@ -95,16 +98,13 @@ class BlockListAPI(object):
         """Validate the token."""
         if token is None:
             return "", False
-        user = self.user_service.get_user(token)
-        if user == {}:
-            return "", False
-        expired = user.get("exp", "")
-        if expired == "":
+        user = self.user_service.decode_user(token)
+        if user.user_id == "":
             return "", False
         now = datetime.datetime.timestamp(datetime.datetime.utcnow())
-        if float(expired) < now:
+        if float(user.exp) < now:
             return "", False
-        return user["user_id"], True
+        return user.user_id, True
 
 
 class UserAPI(object):
@@ -118,7 +118,7 @@ class UserAPI(object):
     def _register_routes(self):
         """Register API routes."""
         self.router.add_api_route(
-            path="/user/token",
+            path="/user/login",
             endpoint=self.get_user_app_token,
             methods=["POST"],
             response_model=GetUserAppTokenResponse,
@@ -131,10 +131,10 @@ class UserAPI(object):
         if token is None:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=INVALID_TOKEN)
 
-        app_token, picture, email = self.user_service.get_user_app_token(token)
-        if app_token == "":
+        user = self.user_service.get_user_app_token(token)
+        if user.jwt == "":
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN)
-        return GetUserAppTokenResponse(jwt=app_token, email=email, picture=picture)
+        return GetUserAppTokenResponse(jwt=user.jwt, email=user.email, picture=user.picture)
 
 
 def create_app(cfg: Config):
