@@ -48,7 +48,7 @@ class AnalyticsCron(object):
                 if update_response.acknowledged:
                     logging.info(f"weekly analytics for {user_id} reset successfully")
                 else:
-                    logging.error(f"unable to update weekly analytics for {user_id}")
+                    logging.error(f"unable to reset weekly analytics for {user_id}")
             elif period == "daily":
                 update_filter = {"user_id": user_id}
                 update_operation = {"$set": {"daily": 0}}
@@ -58,7 +58,7 @@ class AnalyticsCron(object):
                 if update_response.acknowledged:
                     logging.info(f"daily analytics for {user_id} reset successfully")
                 else:
-                    logging.error(f"unable to update weekly analytics for {user_id}")
+                    logging.error(f"unable to reset daily analytics for {user_id}")
 
     # Function to update the user analytics
     def update_collection(self):
@@ -89,7 +89,7 @@ class AnalyticsCron(object):
                     "$set": {
                         "user_id": session_data["user_id"],
                         "daily": int(session_data["duartion"]),
-                        "completed_sessions": int(1),
+                        "completed_sessions": 1,
                     }
                 }
 
@@ -103,7 +103,7 @@ class AnalyticsCron(object):
                         "completed_sessions": int(
                             current_user_analytics["completed_sessions"]
                         )
-                        + int(1),
+                        + 1,
                     }
                 }
 
@@ -113,36 +113,25 @@ class AnalyticsCron(object):
                         + int(session_data["duartion"])
                     }
                 }
-
-            update_response_daily = self.db.analytics.update_one(
-                update_query_filter, update_operation_daily, upsert=True
-            )
-            update_response_weekly = self.db.analytics.update_one(
-                update_query_filter, update_operation_weekly, upsert=True
-            )
-            if update_response_daily.acknowledged:
+            try:
+                update_response_daily = self.db.analytics.update_one(
+                    update_query_filter, update_operation_daily, upsert=True
+                )
+                update_response_weekly = self.db.analytics.update_one(
+                    update_query_filter, update_operation_weekly, upsert=True
+                )
+                self._update_max_session_id(session_data["session_id"])
                 logging.info(
                     f"daily analytics record updated successfully for {session_data['user_id']}"
                 )
-            else:
-                logging.error("could not update daily user stats")
-                raise errors.WriteError(
-                    error="daily_update_failed",
-                    details="could not update daily user stats",
-                )
 
-            if update_response_weekly.acknowledged:
                 logging.info(
                     f"weekly analytics record updated successfully for {session_data['user_id']}"
                 )
-                self._update_max_session_id(session_data["session_id"])
-            else:
-                logging.error("could not update weekly user stats")
-                raise errors.WriteError(
-                    error="daily_update_failed",
-                    details="could not update daily user stats",
-                )
-            test_val = self.db.analytics.find_one({"user_id": session_data["user_id"]})
-            logging.debug(f"updated value {test_val}")
+            except errors.WriteError as e:
+                logging.error(f"Error write to db - {e}")
+
+            _temp = self.db.analytics.find_one({"user_id": session_data["user_id"]})
+            logging.info(f"updated value {_temp}")
 
         return

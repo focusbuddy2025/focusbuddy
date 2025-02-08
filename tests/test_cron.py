@@ -11,8 +11,6 @@ from typer.testing import CliRunner
 
 
 class TestAnalyticsCronReset(unittest.TestCase):
-    db = MongoDB().db
-
     def test_reset_weekly_analytics(self):
         self.db = MongoDB().db
         self.analytics_cron = AnalyticsCron(cfg=None)
@@ -90,10 +88,80 @@ class TestAnalyticsCronReset(unittest.TestCase):
             self.assertEqual(result["daily"], 0)
             self.assertEqual(result["weekly"], 0)
 
+    def test_reset_weekly_analytics_cli(self):
+        self.db = MongoDB().db
+        self.runner = CliRunner()
+        self.analytics_cron = AnalyticsCron(cfg=None)
+        self.analytics_cron.db = self.db
+
+        # Insert test values #
+        analytics_col = self.db.get_collection("analytics")
+        users_col = self.db.get_collection("users")
+        users_col.delete_many({})
+
+        users_col.insert_one(
+            {
+                "_id": ObjectId(),
+                "user_id": "test_user_1",
+                "user_status": 4,
+            }
+        )
+        users_col.insert_one(
+            {
+                "_id": ObjectId(),
+                "user_id": "test_user_2",
+                "user_status": 4,
+            }
+        )
+        users_col.insert_one(
+            {
+                "_id": ObjectId(),
+                "user_id": "test_user_3",
+                "user_status": 4,
+            }
+        )
+
+        self.assertEqual(users_col.count_documents({}), 3)
+        analytics_col.delete_many({})
+
+        analytics_col.insert_one(
+            {
+                "_id": ObjectId(),
+                "user_id": "test_user_1",
+                "daily": 120,
+                "weekly": 600,
+                "active": True,
+            }
+        )
+        analytics_col.insert_one(
+            {
+                "_id": ObjectId(),
+                "user_id": "test_user_2",
+                "daily": 200,
+                "weekly": 800,
+                "active": True,
+            }
+        )
+        analytics_col.insert_one(
+            {
+                "_id": ObjectId(),
+                "user_id": "test_user_3",
+                "daily": 300,
+                "weekly": 1000,
+                "active": True,
+            }
+        )
+
+        self.assertEqual(analytics_col.count_documents({}), 3)
+
+        reset_results = self.runner.invoke(
+            app, ["reset-analytics", "--period", "weekly"]
+        )
+        self.assertEqual(reset_results.exit_code, 0)
+        self.assertIn("Resetting analytics", reset_results.stdout)
+
 
 class TestAnalyticsCronUpdate(unittest.TestCase):
-    # db = MongoDB().db
-
     def test_update_analytics(self):
         self.db = MongoDB().db
         self.analytics_cron = AnalyticsCron(cfg=None)
@@ -193,17 +261,22 @@ class TestAnalyticsCronUpdate(unittest.TestCase):
 
         self.assertEqual(analytics_col.count_documents({}), 3)
         self.analytics_cron.update_collection()
-        update_results = analytics_col.find({})
+        # update_results = self.analytics_cron.update_collection()
+        update_results = analytics_col.find_one({"user_id": "test_user_1"})
 
-        self.assertEqual(update_results[0]["daily"], 3720)
-        self.assertEqual(update_results[0]["weekly"], 4200)
-        self.assertEqual(update_results[0]["completed_sessions"], 2)
-        self.assertEqual(update_results[1]["daily"], 3800)
-        self.assertEqual(update_results[1]["weekly"], 4400)
-        self.assertEqual(update_results[1]["completed_sessions"], 3)
-        self.assertEqual(update_results[2]["daily"], 3900)
-        self.assertEqual(update_results[2]["weekly"], 4600)
-        self.assertEqual(update_results[2]["completed_sessions"], 6)
+        self.assertEqual(update_results["daily"], 3720)
+        self.assertEqual(update_results["weekly"], 4200)
+        self.assertEqual(update_results["completed_sessions"], 2)
+
+        update_results = analytics_col.find_one({"user_id": "test_user_2"})
+        self.assertEqual(update_results["daily"], 3800)
+        self.assertEqual(update_results["weekly"], 4400)
+        self.assertEqual(update_results["completed_sessions"], 3)
+
+        update_results = analytics_col.find_one({"user_id": "test_user_3"})
+        self.assertEqual(update_results["daily"], 3900)
+        self.assertEqual(update_results["weekly"], 4600)
+        self.assertEqual(update_results["completed_sessions"], 6)
 
         max_session_id = session_counter_col.find_one({})
         self.assertEqual(max_session_id["session_id"], 3)
@@ -284,108 +357,38 @@ class TestAnalyticsCronUpdate(unittest.TestCase):
 
         self.assertEqual(analytics_col.count_documents({}), 5)
 
-        self.analytics_cron.update_collection()
-        update_results = analytics_col.find({})
+        update_results = self.analytics_cron.update_collection()
+        update_results = analytics_col.find_one({"user_id": "test_user_1"})
 
-        self.assertEqual(update_results[0]["daily"], 3720)
-        self.assertEqual(update_results[0]["weekly"], 4200)
-        self.assertEqual(update_results[0]["completed_sessions"], 2)
-        self.assertEqual(update_results[1]["daily"], 3800)
-        self.assertEqual(update_results[1]["weekly"], 4400)
-        self.assertEqual(update_results[1]["completed_sessions"], 3)
-        self.assertEqual(update_results[2]["daily"], 3900)
-        self.assertEqual(update_results[2]["weekly"], 4600)
-        self.assertEqual(update_results[2]["completed_sessions"], 6)
-        self.assertEqual(update_results[3]["daily"], 120)
-        self.assertEqual(update_results[3]["weekly"], 600)
-        self.assertEqual(update_results[3]["completed_sessions"], 1)
-        self.assertEqual(update_results[4]["daily"], 200)
-        self.assertEqual(update_results[4]["weekly"], 800)
-        self.assertEqual(update_results[4]["completed_sessions"], 2)
-        self.assertEqual(update_results[5]["daily"], 600)
-        self.assertEqual(update_results[5]["weekly"], 600)
-        self.assertEqual(update_results[5]["completed_sessions"], 1)
+        self.assertEqual(update_results["daily"], 3720)
+        self.assertEqual(update_results["weekly"], 4200)
+        self.assertEqual(update_results["completed_sessions"], 2)
 
+        update_results = analytics_col.find_one({"user_id": "test_user_2"})
+        self.assertEqual(update_results["daily"], 3800)
+        self.assertEqual(update_results["weekly"], 4400)
+        self.assertEqual(update_results["completed_sessions"], 3)
 
-class TestAnalyticsCLICronReset(unittest.TestCase):
-    db = MongoDB().db
+        update_results = analytics_col.find_one({"user_id": "test_user_3"})
+        self.assertEqual(update_results["daily"], 3900)
+        self.assertEqual(update_results["weekly"], 4600)
+        self.assertEqual(update_results["completed_sessions"], 6)
 
-    def test_reset_weekly_analytics_cli(self):
-        self.db = MongoDB().db
-        self.runner = CliRunner()
-        self.analytics_cron = AnalyticsCron(cfg=None)
-        self.analytics_cron.db = self.db
+        update_results = analytics_col.find_one({"user_id": "test_user_4"})
 
-        # Insert test values #
-        analytics_col = self.db.get_collection("analytics")
-        users_col = self.db.get_collection("users")
-        users_col.delete_many({})
+        self.assertEqual(update_results["daily"], 120)
+        self.assertEqual(update_results["weekly"], 600)
+        self.assertEqual(update_results["completed_sessions"], 1)
 
-        users_col.insert_one(
-            {
-                "_id": ObjectId(),
-                "user_id": "test_user_1",
-                "user_status": 4,
-            }
-        )
-        users_col.insert_one(
-            {
-                "_id": ObjectId(),
-                "user_id": "test_user_2",
-                "user_status": 4,
-            }
-        )
-        users_col.insert_one(
-            {
-                "_id": ObjectId(),
-                "user_id": "test_user_3",
-                "user_status": 4,
-            }
-        )
+        update_results = analytics_col.find_one({"user_id": "test_user_5"})
+        self.assertEqual(update_results["daily"], 200)
+        self.assertEqual(update_results["weekly"], 800)
+        self.assertEqual(update_results["completed_sessions"], 2)
 
-        self.assertEqual(users_col.count_documents({}), 3)
-        analytics_col.delete_many({})
-
-        analytics_col.insert_one(
-            {
-                "_id": ObjectId(),
-                "user_id": "test_user_1",
-                "daily": 120,
-                "weekly": 600,
-                "active": True,
-            }
-        )
-        analytics_col.insert_one(
-            {
-                "_id": ObjectId(),
-                "user_id": "test_user_2",
-                "daily": 200,
-                "weekly": 800,
-                "active": True,
-            }
-        )
-        analytics_col.insert_one(
-            {
-                "_id": ObjectId(),
-                "user_id": "test_user_3",
-                "daily": 300,
-                "weekly": 1000,
-                "active": True,
-            }
-        )
-
-        self.assertEqual(analytics_col.count_documents({}), 3)
-
-        reset_results = self.runner.invoke(
-            app, ["reset-analytics", "--period", "weekly"]
-        )
-        self.assertEqual(reset_results.exit_code, 0)
-        self.assertIn("Resetting analytics", reset_results.stdout)
-
-
-class TestAnalyticsCLICronUpdate(unittest.TestCase):
-    db = MongoDB().db
-    runner = CliRunner()
+        update_results = analytics_col.find_one({"user_id": "test_user_6"})
+        self.assertEqual(update_results["daily"], 600)
+        self.assertEqual(update_results["weekly"], 600)
+        self.assertEqual(update_results["completed_sessions"], 1)
 
     def test_update_analytics_cli(self):
         self.db = MongoDB().db
