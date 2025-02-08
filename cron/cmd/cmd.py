@@ -114,10 +114,10 @@ class AnalyticsCron(object):
                     }
                 }
             try:
-                update_response_daily = self.db.analytics.update_one(
+                self.db.analytics.update_one(
                     update_query_filter, update_operation_daily, upsert=True
                 )
-                update_response_weekly = self.db.analytics.update_one(
+                self.db.analytics.update_one(
                     update_query_filter, update_operation_weekly, upsert=True
                 )
                 self._update_max_session_id(session_data["session_id"])
@@ -132,6 +132,6 @@ class AnalyticsCron(object):
                 logging.error(f"Error write to db - {e}")
 
             _temp = self.db.analytics.find_one({"user_id": session_data["user_id"]})
-            logging.info(f"updated value {_temp}")
+            logging.debug(f"updated value {_temp}")
 
         return

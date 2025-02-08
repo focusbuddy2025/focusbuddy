@@ -357,7 +357,7 @@ class TestAnalyticsCronUpdate(unittest.TestCase):
 
         self.assertEqual(analytics_col.count_documents({}), 5)
 
-        update_results = self.analytics_cron.update_collection()
+        self.analytics_cron.update_collection()
         update_results = analytics_col.find_one({"user_id": "test_user_1"})
 
         self.assertEqual(update_results["daily"], 3720)
