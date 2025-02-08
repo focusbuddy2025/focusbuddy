@@ -2,8 +2,9 @@
 # -*- encoding=utf8 -*-
 
 from enum import Enum, IntEnum
-from pydantic import BaseModel
 from typing import List
+
+from pydantic import BaseModel
 
 
 class ResponseStatus(str, Enum):
@@ -56,3 +57,11 @@ class GetUserAppTokenResponse(BaseModel):
 
 class GetUserAppTokenRequest(BaseModel):
     token: str
+
+
+class AnalyticsListResponse(BaseModel):
+    daily: int = 0
+    weekly: int = 0
+    completed_sessions: int = 0
+    status: ResponseStatus = ResponseStatus.SUCCESS
+
