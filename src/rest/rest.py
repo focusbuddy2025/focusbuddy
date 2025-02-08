@@ -5,8 +5,10 @@ from typing import Annotated
 import datetime
 
 from bson import ObjectId
+
 from fastapi import APIRouter, HTTPException, status
-from fastapi import FastAPI, Header
+from fastapi import FastAPI, Header, APIRouter, HTTPException, status, Response
+
 from fastapi.responses import JSONResponse
 
 from src.api import ListBlockListResponse, EditBlockListResponse, ResponseStatus, AddBlockListRequest, GetUserAppTokenResponse, GetUserAppTokenRequest
@@ -76,7 +78,7 @@ class BlockListAPI(object):
         ok = self.blocklist_service.delete_blocklist(user_id, blocklist_id)
         if not ok:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=BLOCKLIST_NOT_FOUND)
-        return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content={})
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @staticmethod
     def validate_domain(domain: str):
