@@ -49,8 +49,19 @@ class AddBlockListRequest(BaseModel):
     list_type: BlockListType
 
 
+class GetUserAppTokenResponse(BaseModel):
+    jwt: str
+    email: str
+    picture: str
+
+
+class GetUserAppTokenRequest(BaseModel):
+    token: str
+
+
 class AnalyticsListResponse(BaseModel):
     daily: int = 0
     weekly: int = 0
     completed_sessions: int = 0
     status: ResponseStatus = ResponseStatus.SUCCESS
+

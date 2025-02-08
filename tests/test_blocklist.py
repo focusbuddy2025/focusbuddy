@@ -2,6 +2,9 @@
 # -*- encoding=utf8 -*-
 import unittest
 from bson import ObjectId
+
+from src.config import Config
+from src.service.user import UserService
 from tests.test_utils import get_test_app
 from src.api import ResponseStatus, BlockListType
 from src.db import MongoDB  # Import the MongoDB singleton
@@ -11,9 +14,12 @@ from src.service.blocklist import BlockListService
 class TestBlockList(unittest.TestCase):
     app = get_test_app()
     db = MongoDB().db
+    user_service = UserService(cfg=Config())
+    user_id = "focusbuddy_test"
+    jwt_token = user_service._generate_jwt("focusbuddy_test", "focusbuddy.test@gmail.com")
 
     def test_list_blocklist(self):
-        response = self.app.get("/api/v1/blocklist/test")
+        response = self.app.get("/api/v1/blocklist", headers={"x-auth-token": self.jwt_token})
         assert response.status_code == 200
         assert response.json() == {
             "blocklist": [],
@@ -22,7 +28,7 @@ class TestBlockList(unittest.TestCase):
 
     def test_list_blocklist_non_empty(self):
         test_entry = {
-            "user_id": "test",
+            "user_id": self.user_id,
             "list_type": BlockListType.WORK,
             "domain": "example.com"
         }
@@ -30,9 +36,8 @@ class TestBlockList(unittest.TestCase):
         collection.delete_many({})
         inserted_id = collection.insert_one(test_entry).inserted_id
 
-        response = self.app.get("/api/v1/blocklist/test")
+        response = self.app.get("/api/v1/blocklist", headers={"x-auth-token": self.jwt_token})
         assert response.status_code == 200
-        # print(response.json())
         assert response.json() == {
             "blocklist": [
                 {"id": str(inserted_id), "domain": "example.com", "list_type": BlockListType.WORK}
@@ -42,14 +47,13 @@ class TestBlockList(unittest.TestCase):
 
     def test_list_blocklist_multiple_entries(self):
         test_entries = [
-            {"user_id": "test", "list_type": BlockListType.WORK, "domain": "example1.com"},
-            {"user_id": "test", "list_type": BlockListType.WORK, "domain": "example2.com"},
+            {"user_id": self.user_id, "list_type": BlockListType.WORK, "domain": "example1.com"},
+            {"user_id": self.user_id, "list_type": BlockListType.WORK, "domain": "example2.com"},
         ]
         collection = self.db.get_collection("blocklist")
         collection.delete_many({})
         inserted_ids = [collection.insert_one(entry).inserted_id for entry in test_entries]
-        # print(response.json())
-        response = self.app.get("/api/v1/blocklist/test")
+        response = self.app.get("/api/v1/blocklist", headers={"x-auth-token": self.jwt_token})
         assert response.status_code == 200
 
         assert response.json() == {
@@ -62,33 +66,32 @@ class TestBlockList(unittest.TestCase):
 
     def test_list_blocklist_different_users(self):
         test_entries = [
-            {"user_id": "test", "list_type": BlockListType.WORK, "domain": "example1.com"},
+            {"user_id": self.user_id, "list_type": BlockListType.WORK, "domain": "example1.com"},
             {"user_id": "user", "list_type": BlockListType.WORK, "domain": "example2.com"},
         ]
         collection = self.db.get_collection("blocklist")
         collection.delete_many({})
         [collection.insert_one(entry) for entry in test_entries]
 
-        response = self.app.get("/api/v1/blocklist/user")
+        response = self.app.get("/api/v1/blocklist", headers={"x-auth-token": self.jwt_token})
         assert response.status_code == 200
-        # print(response.json())
         assert response.json() == {
             "blocklist": [
-                {"id": str(entry["_id"]), "domain": "example2.com", "list_type": BlockListType.WORK}
-                for entry in collection.find({"user_id": "user"})
+                {"id": str(entry["_id"]), "domain": "example1.com", "list_type": BlockListType.WORK}
+                for entry in collection.find({"user_id": self.user_id})
             ],
             "status": ResponseStatus.SUCCESS,
         }
 
     def test_list_blocklist_different_list_types(self):
         test_entries = [
-            {"user_id": "test", "list_type": BlockListType.WORK, "domain": "work.com"},
-            {"user_id": "test", "list_type": BlockListType.PERSONAL, "domain": "personal.com"},
+            {"user_id": self.user_id, "list_type": BlockListType.WORK, "domain": "work.com"},
+            {"user_id": self.user_id, "list_type": BlockListType.PERSONAL, "domain": "personal.com"},
         ]
         collection = self.db.get_collection("blocklist")
         collection.delete_many({})
         [collection.insert_one(entry) for entry in test_entries]
-        response = self.app.get("/api/v1/blocklist/test")
+        response = self.app.get("/api/v1/blocklist", headers={"x-auth-token": self.jwt_token})
         assert response.status_code == 200
         assert len(response.json()["blocklist"]) == 2
 
@@ -127,18 +130,18 @@ class TestBlockList(unittest.TestCase):
     def test_list_blocklist_after_adding_entries(self):
         """Ensure list_blocklist retrieves added entries."""
         # Insert data using add_blocklist
-        self.service.add_blocklist("test", "https://example1.com", BlockListType.WORK)
-        self.service.add_blocklist("test", "https://example2.com", BlockListType.WORK)
+        self.service.add_blocklist(self.user_id, "https://example1.com", BlockListType.WORK)
+        self.service.add_blocklist(self.user_id, "https://example2.com", BlockListType.WORK)
 
         # Call API to retrieve blocklist
-        response = self.app.get("/api/v1/blocklist/test")
+        response = self.app.get("/api/v1/blocklist", headers={"x-auth-token": self.jwt_token})
         assert response.status_code == 200
 
         # Expected response
         collection = self.db.get_collection("blocklist")
         expected_blocklist = [
             {"id": str(entry["_id"]), "domain": entry["domain"], "list_type": entry["list_type"]}
-            for entry in collection.find({"user_id": "test"})
+            for entry in collection.find({"user_id": self.user_id})
         ]
         # print(response.json())
         assert response.json() == {
@@ -148,11 +151,11 @@ class TestBlockList(unittest.TestCase):
 
     def test_add_invalid_url(self):
         """Test adding an invalid URL returns FAILED."""
-        response = self.app.post("/api/v1/blocklist/test_user", json={"domain": "invalid_url", "list_type": BlockListType.WORK})
+        response = self.app.post("/api/v1/blocklist", json={"domain": "invalid_url", "list_type": BlockListType.WORK}, headers={"x-auth-token": self.jwt_token})
         assert response.status_code == 400
 
         # Ensure no entry was added
-        count = self.db.get_collection("blocklist").count_documents({"user_id": "test_user", "domain": "invalid_url"})
+        count = self.db.get_collection("blocklist").count_documents({"user_id": self.user_id, "domain": "invalid_url"})
         assert count == 0
 
     def test_add_website_different_users(self):
@@ -179,26 +182,26 @@ class TestBlockList(unittest.TestCase):
 
         # Insert a test entry
         test_entry = {
-            "user_id": "test_user",
+            "user_id": self.user_id,
             "domain": "example.com",
             "list_type": BlockListType.WORK
         }
         inserted_id = collection.insert_one(test_entry).inserted_id
 
         # Delete the entry
-        response = self.app.delete(f"/api/v1/blocklist/test_user/{str(inserted_id)}")
+        response = self.app.delete(f"/api/v1/blocklist/{str(inserted_id)}", headers={"x-auth-token": self.jwt_token})
         assert response.status_code == 204
         # Verify the entry is actually removed
         assert collection.count_documents({"_id": inserted_id}) == 0
 
     def test_delete_non_existent_entry(self):
         """Test deleting a non-existent blocklist entry."""
-        response = self.app.delete(f"/api/v1/blocklist/test_user/{str(ObjectId())}") # Random ObjectId
+        response = self.app.delete(f"/api/v1/blocklist/{str(ObjectId())}", headers={"x-auth-token": self.jwt_token}) # Random ObjectId
         assert response.status_code == 404
 
     def test_delete_invalid_object_id(self):
         """Test deleting an entry with an invalid ObjectId format."""
-        response = self.app.delete("/api/v1/blocklist/test_user/invalid_id")
+        response = self.app.delete("/api/v1/blocklist/invalid_id", headers={"x-auth-token": self.jwt_token})
         assert response.status_code == 400
 
     def test_delete_entry_belongs_to_another_user(self):
@@ -214,7 +217,7 @@ class TestBlockList(unittest.TestCase):
         inserted_id = collection.insert_one(test_entry).inserted_id
 
         # "test_user" tries to delete it
-        response = self.app.delete(f"/api/v1/blocklist/test_user/{str(inserted_id)}")
+        response = self.app.delete(f"/api/v1/blocklist/{str(inserted_id)}", headers={"x-auth-token": self.jwt_token})
         assert response.status_code == 404
 
         # Ensure the entry still exists

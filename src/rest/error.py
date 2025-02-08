@@ -21,3 +21,8 @@ BLOCKLIST_ALREADY_EXISTS = {
     "code": 10008,
     "message": "Blocklist already exists"
 }
+
+INVALID_TOKEN = {
+    "code": 10010,
+    "message": "Invalid token"
+}

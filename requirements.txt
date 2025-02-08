@@ -5,5 +5,8 @@ pymongo >=4.11
 uvicorn~=0.34.0
 testcontainers>=4.9.1
 httpx
+requests~=2.32.3
+
+pyjwt
 typer >= 0.15.1
 rich >= 13.9.4
