@@ -46,3 +46,13 @@ class EditBlockListResponse(BaseModel):
 class AddBlockListRequest(BaseModel):
     domain: str
     list_type: BlockListType
+
+
+class GetUserAppTokenResponse(BaseModel):
+    jwt: str
+    email: str
+    picture: str
+
+
+class GetUserAppTokenRequest(BaseModel):
+    token: str

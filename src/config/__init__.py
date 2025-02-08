@@ -24,3 +24,5 @@ class Config:
             self.app_host = os.getenv("APP_HOST", "localhost")
             self.app_port = int(os.getenv("APP_PORT", 8000))
             self.initialized = True
+
+            self.secret_key = os.getenv("SECRET_KEY", "70dd17f8-b3cd-4b1a-a09a-7cdf68c59fdc")
