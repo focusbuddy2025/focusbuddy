@@ -2,8 +2,9 @@
 # -*- encoding=utf8 -*-
 
 from enum import Enum, IntEnum
-from pydantic import BaseModel
 from typing import List
+
+from pydantic import BaseModel
 
 
 class ResponseStatus(str, Enum):
@@ -46,3 +47,10 @@ class EditBlockListResponse(BaseModel):
 class AddBlockListRequest(BaseModel):
     domain: str
     list_type: BlockListType
+
+
+class AnalyticsListResponse(BaseModel):
+    daily: int = 0
+    weekly: int = 0
+    completed_sessions: int = 0
+    status: ResponseStatus = ResponseStatus.SUCCESS

@@ -2,10 +2,10 @@
 # -*- encoding=utf8 -*-
 import os
 
-from pymongo import ASCENDING
+from pymongo import ASCENDING, MongoClient
 from testcontainers.mongodb import MongoDbContainer
 
-from src.config import Config
+from cron.config import Config
 
 
 class MongoDB:
@@ -43,8 +43,23 @@ class MongoDB:
             )
             cls._instance._init_index(
                 "analytics",
+                [("user_id", ASCENDING)],
+            )
+            cls._instance._init_index(
+                "users",
                 [
                     ("user_id", ASCENDING),
+                ],
+            )
+            cls._instance._init_index(
+                "session_counter",
+                [("session_id", ASCENDING)],
+            )
+            cls._instance._init_index(
+                "focus_timer",
+                [
+                    ("user_id", ASCENDING),
+                    ("session_id", ASCENDING),
                 ],
             )
         return cls._instance
