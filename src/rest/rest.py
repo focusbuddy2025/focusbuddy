@@ -1,13 +1,11 @@
 #!/usr/bin/env python
 # -*- encoding=utf8 -*-
+import datetime
 import re
 from typing import Annotated
-import datetime
 
 from bson import ObjectId
-
 from fastapi import APIRouter, FastAPI, HTTPException, Response, status, Header
-from fastapi.responses import JSONResponse
 
 from src.api import (
     AddBlockListRequest,
