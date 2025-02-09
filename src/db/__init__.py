@@ -2,7 +2,7 @@
 # -*- encoding=utf8 -*-
 import os
 
-from pymongo import ASCENDING
+from pymongo import ASCENDING, MongoClient
 from testcontainers.mongodb import MongoDbContainer
 
 from src.config import Config
