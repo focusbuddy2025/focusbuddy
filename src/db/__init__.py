@@ -47,6 +47,20 @@ class MongoDB:
                     ("user_id", ASCENDING),
                 ],
             )
+            cls._instance._init_index(
+                "focus_timer",
+                [
+                    ("user_id", ASCENDING),
+                    ("session_status", ASCENDING),
+                    ("start_date", ASCENDING),
+                    ("start_time", ASCENDING),
+                    ("duration", ASCENDING),
+                    ("break_duration", ASCENDING),
+                    ("session_type", ASCENDING),
+                    ("remaining_focus_time", ASCENDING),
+                    ("remaining_break_time", ASCENDING),
+                ],
+            )
         return cls._instance
 
     def _init_index(self, collection_name, index):

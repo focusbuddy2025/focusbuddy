@@ -3,3 +3,4 @@
 
 from .analytics import AnalyticsListService
 from .blocklist import BlockListService
+from .focustimer import FocusTimerService

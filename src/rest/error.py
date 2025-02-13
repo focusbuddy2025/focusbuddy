@@ -26,3 +26,23 @@ INVALID_TOKEN = {
     "code": 10010,
     "message": "Invalid token"
 }
+
+FOCUSSESSION_CONFLICT = {
+    "code": 10011,
+    "message": "Focus session conflict with upcoming sessions"
+}
+
+FOCUSSESSION_NOT_UPDATED = {
+    "code": 10012,
+    "message": "Focus session not updated"
+}
+
+FOCUSSESSION_NOT_FOUND = {
+    "code": 10013,
+    "message": "Focus session not found"
+}
+
+USERSTATUS_NOT_UPDATED = {
+    "code": 10014,
+    "message": "User status not updated"
+}
