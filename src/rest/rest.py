@@ -140,7 +140,6 @@ class UserAPI(BaseAPI):
 
     def __init__(self, cfg: Config):
         super().__init__(cfg)
-        self.router = APIRouter()
         self._register_routes()
 
     def _register_routes(self):
