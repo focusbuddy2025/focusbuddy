@@ -36,13 +36,32 @@ from src.service import AnalyticsListService, BlockListService, FocusTimerServic
 from src.service.user import UserService
 
 
-class BlockListAPI(object):
+class BaseAPI:
+    """Base API class to handle common functionality like token validation."""
+    
+    def __init__(self, cfg: Config):
+        self.cfg = cfg
+        self.user_service = UserService(cfg)
+        self.router = APIRouter()
+
+    def validate_token(self, token: str) -> (str, bool):
+        """Validate the token."""
+        if token is None:
+            return "", False
+        user = self.user_service.decode_user(token)
+        if user.user_id == "":
+            return "", False
+        now = datetime.datetime.timestamp(datetime.datetime.utcnow())
+        if float(user.exp) < now:
+            return "", False
+        return user.user_id, True
+
+class BlockListAPI(BaseAPI):
     """class to encapsulate the blocklist API endpoints."""
 
     def __init__(self, cfg: Config):
-        self.router = APIRouter()
+        super().__init__(cfg)
         self.blocklist_service = BlockListService(cfg)
-        self.user_service = UserService(cfg)
         self._register_routes()
 
     def _register_routes(self):
@@ -114,38 +133,26 @@ class BlockListAPI(object):
         )
         return url_regex.match(domain)
 
-    def validate_token(self, token: str) -> (str, bool):
-        """Validate the token."""
-        if token is None:
-            return "", False
-        user = self.user_service.decode_user(token)
-        if user.user_id == "":
-            return "", False
-        now = datetime.datetime.timestamp(datetime.datetime.utcnow())
-        if float(user.exp) < now:
-            return "", False
-        return user.user_id, True
+    # def validate_token(self, token: str) -> (str, bool):
+    #     """Validate the token."""
+    #     if token is None:
+    #         return "", False
+    #     user = self.user_service.decode_user(token)
+    #     if user.user_id == "":
+    #         return "", False
+    #     now = datetime.datetime.timestamp(datetime.datetime.utcnow())
+    #     if float(user.exp) < now:
+    #         return "", False
+    #     return user.user_id, True
 
 
-class UserAPI(object):
+class UserAPI(BaseAPI):
     """class to encapsulate the user API endpoints."""
 
     def __init__(self, cfg: Config):
+        super().__init__(cfg)
         self.router = APIRouter()
-        self.user_service = UserService(cfg)
         self._register_routes()
-
-    def validate_token(self, token: str) -> (str, bool):
-        """Validate the token."""
-        if token is None:
-            return "", False
-        user = self.user_service.decode_user(token)
-        if user.user_id == "":
-            return "", False
-        now = datetime.datetime.timestamp(datetime.datetime.utcnow())
-        if float(user.exp) < now:
-            return "", False
-        return user.user_id, True
 
     def _register_routes(self):
         """Register API routes."""
@@ -208,26 +215,13 @@ class AnalyticsListAPI(object):
         response = self.analyticslist_service.get_analytics(user_id)
         return response
 
-class FocusTimerAPI(object):
+class FocusTimerAPI(BaseAPI):
     """class to encapsulate the focustimer API endpoints."""
 
     def __init__(self, cfg: Config):
-        self.router = APIRouter()
+        super().__init__(cfg)
         self.timer_service = FocusTimerService(cfg)
-        self.user_service = UserService(cfg)
         self._register_routes()
-
-    def validate_token(self, token: str) -> (str, bool):
-        """Validate the token."""
-        if token is None:
-            return "", False
-        user = self.user_service.decode_user(token)
-        if user.user_id == "":
-            return "", False
-        now = datetime.datetime.timestamp(datetime.datetime.utcnow())
-        if float(user.exp) < now:
-            return "", False
-        return user.user_id, True
 
     def _register_routes(self):
         """Register API routes."""
