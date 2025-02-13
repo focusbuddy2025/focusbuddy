@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding=utf8 -*-
 
-from src.api import SessionStatus, SessionType, FocusSessionModel
+from src.api import SessionStatus, SessionType, GetFocusSessionResponse
 from src.config import Config
 from src.db import MongoDB
 from bson import ObjectId 
@@ -54,10 +54,9 @@ class FocusTimerService(object):
         """Delete focus timer."""
         collection = self.db.get_collection("focus_timer")
         result = collection.delete_one({"user_id": user_id, "_id": ObjectId(session_id)})
-        print(result)
         return result.deleted_count > 0
     
-    def get_next_focus_session(self, user_id: str) -> FocusSessionModel:
+    def get_next_focus_session(self, user_id: str) -> GetFocusSessionResponse:
         """Get next upcoming focus session."""
         collection = self.db.get_collection("focus_timer")
 
@@ -66,9 +65,9 @@ class FocusTimerService(object):
             sort=[("start_date", 1), ("start_time", 1)]  # Sort: First by date, then by time
         )
         
-        return FocusSessionModel(**session) if session else None
+        return GetFocusSessionResponse(**session) if session else None
     
-    def get_all_focus_session(self, user_id: str, session_status: int = None) -> list[FocusSessionModel]:
+    def get_all_focus_session(self, user_id: str, session_status: int = None) -> list[GetFocusSessionResponse]:
         """Get focus sessions of specific status, default is fetching all."""
         collection = self.db.get_collection("focus_timer")
 
@@ -79,7 +78,8 @@ class FocusTimerService(object):
         session_cursor = collection.find(query)
 
         focus_sessions = [
-            FocusSessionModel(
+            GetFocusSessionResponse(
+                session_id = str(doc["_id"]),
                 session_status=SessionStatus(doc.get("session_status")),
                 start_date=doc.get("start_date"),
                 start_time=doc.get("start_time"),
