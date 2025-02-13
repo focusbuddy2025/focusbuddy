@@ -14,7 +14,6 @@ if __name__ == "__main__":
     
     debugpy.listen(("0.0.0.0", 5678))  # Ensure it's listening
     print("Waiting for debugger to attach...")
-    debugpy.wait_for_client()  # Optional: pauses execution until VS Code attaches
 
     cfg = Config()
     print(f"Starting server at {cfg.app_host}:{cfg.app_port}")
