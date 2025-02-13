@@ -9,6 +9,8 @@ import requests
 
 from src.config import Config
 from src.db import MongoDB
+from src.api import UserStatus
+from bson import ObjectId 
 
 
 @dataclass
@@ -46,8 +48,12 @@ class UserService(object):
         collection = self.db.get_collection("user")
         user = collection.find_one({"email": email})
         if user is None:
-            res = collection.insert_one({"email": email})
+            res = collection.insert_one({"email": email, "status": UserStatus.IDLE})
             return str(res.inserted_id)
+        
+        if "status" not in user:
+            collection.update_one({"_id": user["_id"]}, {"$set": {"status": UserStatus.IDLE}})
+
         return str(user["_id"])
 
     def _generate_jwt(self, user_id: str, email: str) -> str:
@@ -80,3 +86,9 @@ class UserService(object):
         except Exception as e:
             print(e)
             return DecodedUser(user_id="", email="", exp=0)
+        
+    def update_user_status(self, user_id: str, status: str):
+        """Update user status."""
+        collection = self.db.get_collection("user")
+        result = collection.update_one({"_id": ObjectId(user_id)}, {"$set": {"status": status}})
+        return result.modified_count > 0
