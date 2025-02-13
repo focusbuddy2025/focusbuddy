@@ -104,3 +104,11 @@ class EditFocusSessionResponse(BaseModel):
     status: ResponseStatus = ResponseStatus.SUCCESS
     user_id: str
     id: str
+
+class GetNextFocusSessionResponse(BaseModel):
+    focus_session: Optional[FocusSessionModel] = None
+    status: ResponseStatus = ResponseStatus.SUCCESS
+
+class GetAllFocusSessionResponse(BaseModel):
+    focus_sessions: list[FocusSessionModel]
+    status: ResponseStatus = ResponseStatus.SUCCESS

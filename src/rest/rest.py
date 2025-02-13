@@ -18,7 +18,9 @@ from src.api import (
     UpdateUserStatusRequest,
     UpdateUserStatusResponse,
     FocusSessionModel,
-    EditFocusSessionResponse
+    EditFocusSessionResponse,
+    GetNextFocusSessionResponse,
+    GetAllFocusSessionResponse
 )
 from src.config import Config, api_version
 from src.rest.error import (
@@ -229,6 +231,18 @@ class FocusTimerAPI(BaseAPI):
             methods=["DELETE"],
             summary="Delete a focus session",
         )
+        self.router.add_api_route(
+            path="/focustimer/nextSession",
+            endpoint=self.get_next_focus_session,
+            methods=["GET"],
+            summary="Get next upcoming focus session",
+        )
+        self.router.add_api_route(
+            path="/focustimer",
+            endpoint=self.get_all_focus_session,
+            methods=["GET"],
+            summary="Get all focus sessions of specific status, fetch all by default",
+        )
 
     async def add_focus_session(self, request: FocusSessionModel, x_auth_token: Annotated[str, Header()] = None):
         """Add a focus session."""
@@ -264,6 +278,23 @@ class FocusTimerAPI(BaseAPI):
         if not ok:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=FOCUSSESSION_NOT_FOUND)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
+    
+    async def get_next_focus_session(self, x_auth_token: Annotated[str, Header()] = None):
+        """Get next upcoming focus session."""
+        user_id, ok = self.validate_token(x_auth_token)
+        if not ok:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN)
+        response = self.timer_service.get_next_focus_session(user_id)
+        return GetNextFocusSessionResponse(focus_session=response, status=ResponseStatus.SUCCESS)
+    
+    async def get_all_focus_session(self, x_auth_token: Annotated[str, Header()] = None, session_status: int = None):
+        """Get focus sessions of specific status, default is fetching all."""
+        user_id, ok = self.validate_token(x_auth_token)
+        if not ok:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN)
+        response = self.timer_service.get_all_focus_session(user_id, session_status)
+        return GetAllFocusSessionResponse(focus_sessions=response, status=ResponseStatus.SUCCESS)
+        
 
 def create_app(cfg: Config):
     _app = FastAPI()
