@@ -5,7 +5,7 @@ from src.api import SessionStatus, SessionType, GetFocusSessionResponse
 from src.config import Config
 from src.db import MongoDB
 from bson import ObjectId 
-
+from datetime import datetime
 
 class FocusTimerService(object):
     """class to encapsulate the analytics service."""
@@ -13,11 +13,27 @@ class FocusTimerService(object):
     def __init__(self, cfg: Config):
         self.cfg = cfg
         self.db = MongoDB().db
+    
+    def _time_to_seconds(self, time_str: str) -> int:
+        """Convert HH:MM:SS to total seconds."""
+        time_obj = datetime.strptime(time_str, "%H:%M:%S")
+        return time_obj.hour * 3600 + time_obj.minute * 60 + time_obj.second
 
     def add_focus_session(self, user_id: str, session_status: SessionStatus, start_date: str, start_time: str, duration: int, break_duration: int, session_type: SessionType, remaining_focus_time: int, remaining_break_time: int) -> (str, bool):
         """Add focus timer."""
-        """TODO: If session conflict with upcoming sessions, return error."""
         collection = self.db.get_collection("focus_timer")
+        nextSession = self.get_next_focus_session(user_id)
+        if nextSession:
+            # Convert start times to seconds since midnight
+            proposed_start_time_seconds = self._time_to_seconds(start_time)
+            proposed_end_time_seconds = proposed_start_time_seconds + duration * 60 + break_duration * 60
+            
+            next_session_start_time_seconds = self._time_to_seconds(nextSession.start_time)
+            next_session_end_time_seconds = next_session_start_time_seconds + nextSession.duration * 60 + nextSession.break_duration * 60
+            
+            # Check if there is a time conflict
+            if (proposed_start_time_seconds < next_session_end_time_seconds) and (proposed_end_time_seconds > next_session_start_time_seconds):
+                return "", False  # Conflict: the proposed session overlaps with the next session
 
         query = {
             "user_id": user_id,
@@ -61,7 +77,7 @@ class FocusTimerService(object):
         collection = self.db.get_collection("focus_timer")
 
         session = collection.find_one(
-            {"user_id": user_id, "status": 0},  # Filter: Only sessions with status 0
+            {"user_id": user_id, "session_status": 0},  # Filter: Only sessions with status 0
             sort=[("start_date", 1), ("start_time", 1)]  # Sort: First by date, then by time
         )
         
@@ -93,5 +109,4 @@ class FocusTimerService(object):
         ]
 
         return focus_sessions
-
 

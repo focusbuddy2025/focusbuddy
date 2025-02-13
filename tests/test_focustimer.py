@@ -93,6 +93,42 @@ class TestFocusTimer(unittest.TestCase):
         assert response[0] != ""  # Should return a valid ObjectId
         assert response[1] is True  # Should return True
 
+    def test_add_conflic_session(self):
+        collection = self.db.get_collection("focus_timer")
+        collection.delete_many({})
+        # Insert a test entry
+        test_entry = {
+            "user_id": self.user_id,
+            "session_status": SessionStatus.UPCOMING,
+            "start_date": "02/22/2025",
+            "start_time": "23:16:15",
+            "duration": 1,
+            "break_duration": 1,
+            "session_type": SessionType.WORK,
+            "remaining_focus_time": 60,
+            "remaining_break_time": 60
+        }
+        response = self.app.post("/api/v1/focustimer", json=test_entry, headers={"x-auth-token": self.jwt_token})
+
+        # logging.debug(f"Document count after insertion: {collection.count_documents({})}")
+        # logging.debug(f"Response in adding: {response.json()}")
+        assert response.status_code == 200
+
+        test_entry2 = {
+            "user_id": self.user_id,
+            "session_status": SessionStatus.UPCOMING,
+            "start_date": "02/22/2025",
+            "start_time": "23:15:15",
+            "duration": 1,
+            "break_duration": 1,
+            "session_type": SessionType.WORK,
+            "remaining_focus_time": 60,
+            "remaining_break_time": 60
+        }
+        response = self.app.post("/api/v1/focustimer", json=test_entry2, headers={"x-auth-token": self.jwt_token})
+        # logging.debug(f"Document count after insertion: {collection.count_documents({})}")
+        assert response.status_code == 409
+        
 
     """Test update_focustimer."""
 
