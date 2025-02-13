@@ -133,19 +133,6 @@ class BlockListAPI(BaseAPI):
         )
         return url_regex.match(domain)
 
-    # def validate_token(self, token: str) -> (str, bool):
-    #     """Validate the token."""
-    #     if token is None:
-    #         return "", False
-    #     user = self.user_service.decode_user(token)
-    #     if user.user_id == "":
-    #         return "", False
-    #     now = datetime.datetime.timestamp(datetime.datetime.utcnow())
-    #     if float(user.exp) < now:
-    #         return "", False
-    #     return user.user_id, True
-
-
 class UserAPI(BaseAPI):
     """class to encapsulate the user API endpoints."""
 
@@ -190,7 +177,6 @@ class UserAPI(BaseAPI):
         if not ok:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=USERSTATUS_NOT_UPDATED)
         return UpdateUserStatusResponse(user_id=user_id, user_status=request.user_status, status=ResponseStatus.SUCCESS)
-
 
 class AnalyticsListAPI(object):
     """class to encapsulate the analytics API endpoint."""
