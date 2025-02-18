@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 # -*- encoding=utf8 -*-
 
-from src.api import AnalyticsListResponse, ResponseStatus
+from datetime import datetime, timedelta
+
+from src.api import (
+    AnalyticsListResponse,
+    AnalyticsWeeklySummaryResponse,
+    ResponseStatus,
+)
 from src.config import Config
 from src.db import MongoDB
 
@@ -29,3 +35,59 @@ class AnalyticsListService(object):
             completed_sessions=analytics_result["completed_sessions"],
             status=ResponseStatus.SUCCESS,
         )
+
+    def get_weekly_analytics_per_session_type(
+        self, user_id: str
+    ) -> list[AnalyticsWeeklySummaryResponse]:
+        """Get weekly summary per user per session type"""
+        collection = self.db.get_collection("focus_timer")
+        dow = datetime.now().isoweekday()
+        if dow == 6:
+            start_date_filter = datetime.now()
+        elif dow < 6:
+            start_date_filter = datetime.now() - timedelta(days=(dow))
+        end_date_filter = start_date_filter + timedelta(days=7)
+        pipeline = []
+
+        pipeline.append(
+            {
+                "$match": {
+                    "$and": [
+                        {
+                            "start_date": {
+                                "$gte": start_date_filter.strftime("%Y-%m-%d"),
+                                "$lt": end_date_filter.strftime("%Y-%m-%d"),
+                            }
+                        },
+                        {"session_status": {"$eq": 3}},
+                        {"user_id": {"$eq": user_id}},
+                    ]
+                }
+            }
+        )
+
+        pipeline.append(
+            {
+                "$group": {
+                    "_id": {"session_type": "$session_type", "user_id": "$user_id"},
+                    "duration": {"$sum": "$duration"},
+                }
+            }
+        )
+
+        pipeline.append({"$set": {"user_id": "$_id"}})
+
+        pipeline.append({"$unset": ["_id"]})
+
+        weekly_summary = collection.aggregate(pipeline)
+
+        results = [
+            AnalyticsWeeklySummaryResponse(
+                duration=session["duration"],
+                user_id=session["user_id"]["user_id"],
+                session_type=session["user_id"]["session_type"],
+            )
+            for session in weekly_summary
+        ]
+
+        return results
