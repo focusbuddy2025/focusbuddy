@@ -42,10 +42,9 @@ class AnalyticsListService(object):
         """Get weekly summary per user per session type"""
         collection = self.db.get_collection("focus_timer")
         dow = datetime.now().isoweekday()
-        if dow == 6:
+        start_date_filter = datetime.now() - timedelta(days=(dow))
+        if dow == 7:
             start_date_filter = datetime.now()
-        elif dow < 6:
-            start_date_filter = datetime.now() - timedelta(days=(dow))
         end_date_filter = start_date_filter + timedelta(days=7)
         pipeline = []
 
