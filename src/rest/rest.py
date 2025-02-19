@@ -267,7 +267,7 @@ class FocusTimerAPI(BaseAPI):
         result = self.timer_service.modify_focus_session(user_id, session_id, **updates)
 
         if result == "conflict":
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Time conflict with another focus session.")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=FOCUSSESSION_CONFLICT)
         if not result:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=FOCUSSESSION_NOT_UPDATED)
         return EditFocusSessionResponse(user_id=user_id, id=session_id, status=ResponseStatus.SUCCESS)

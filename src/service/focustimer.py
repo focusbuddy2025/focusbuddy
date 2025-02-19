@@ -64,10 +64,6 @@ class FocusTimerService(object):
             updates["session_status"] = updates["session_status"].value
         if "session_type" in updates:
             updates["session_type"] = updates["session_type"].value
-        updates["start_date"] = start_date
-        updates["start_time"] = start_time
-        updates["duration"] = duration
-        updates["break_duration"] = break_duration
 
         result = collection.update_one({"user_id": user_id, "_id": ObjectId(session_id)}, {"$set": updates})
         return result.modified_count > 0
