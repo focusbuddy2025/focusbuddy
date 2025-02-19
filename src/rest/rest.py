@@ -34,7 +34,6 @@ from src.rest.error import (
 )
 
 from src.service.user import UserService
-from fastapi.responses import JSONResponse
 from src.service import BlockListService, FocusTimerService, AnalyticsListService
 
 
