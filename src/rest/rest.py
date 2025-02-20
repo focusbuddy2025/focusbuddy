@@ -5,22 +5,23 @@ import re
 from typing import Annotated
 
 from bson import ObjectId
-from fastapi import APIRouter, FastAPI, HTTPException, Response, status, Header
+from fastapi import APIRouter, FastAPI, Header, HTTPException, Response, status
 
 from src.api import (
     AddBlockListRequest,
     AnalyticsListResponse,
     EditBlockListResponse,
+    EditFocusSessionResponse,
+    FocusSessionModel,
+    GetAllFocusSessionResponse,
+    GetNextFocusSessionResponse,
+    GetUserAppTokenRequest,
+    GetUserAppTokenResponse,
+    ListAnalyticsWeeklySummaryResponse,
     ListBlockListResponse,
     ResponseStatus,
-    GetUserAppTokenResponse,
-    GetUserAppTokenRequest,
     UpdateUserStatusRequest,
     UpdateUserStatusResponse,
-    FocusSessionModel,
-    EditFocusSessionResponse,
-    GetNextFocusSessionResponse,
-    GetAllFocusSessionResponse
 )
 from src.config import Config, api_version
 from src.rest.error import (
@@ -28,11 +29,11 @@ from src.rest.error import (
     BLOCKLIST_ID_INVALID,
     BLOCKLIST_IS_INVALID,
     BLOCKLIST_NOT_FOUND,
-    INVALID_TOKEN,
     FOCUSSESSION_CONFLICT,
-    FOCUSSESSION_NOT_UPDATED,
     FOCUSSESSION_NOT_FOUND,
-    USERSTATUS_NOT_UPDATED
+    FOCUSSESSION_NOT_UPDATED,
+    INVALID_TOKEN,
+    USERSTATUS_NOT_UPDATED,
 )
 from src.service import AnalyticsListService, BlockListService, FocusTimerService
 from src.service.user import UserService
@@ -40,7 +41,7 @@ from src.service.user import UserService
 
 class BaseAPI:
     """Base API class to handle common functionality like token validation."""
-    
+
     def __init__(self, cfg: Config):
         self.cfg = cfg
         self.user_service = UserService(cfg)
@@ -57,6 +58,7 @@ class BaseAPI:
         if float(user.exp) < now:
             return "", False
         return user.user_id, True
+
 
 class BlockListAPI(BaseAPI):
     """class to encapsulate the blocklist API endpoints."""
@@ -94,29 +96,55 @@ class BlockListAPI(BaseAPI):
         """List all blocklist."""
         user_id, ok = self.validate_token(x_auth_token)
         if not ok:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN
+            )
         response = self.blocklist_service.list_blocklist(user_id)
         return ListBlockListResponse(blocklist=response, status=ResponseStatus.SUCCESS)
 
-    async def add_blocklist(self, request: AddBlockListRequest, x_auth_token: Annotated[str, Header()] = None):
+    async def add_blocklist(
+        self,
+        request: AddBlockListRequest,
+        x_auth_token: Annotated[str, Header()] = None,
+    ):
         """Add an url to blocklist."""
         if not self.validate_domain(request.domain):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=BLOCKLIST_IS_INVALID)
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=BLOCKLIST_IS_INVALID
+            )
         user_id, ok = self.validate_token(x_auth_token)
         if not ok:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN)
-        new_id, ok = self.blocklist_service.add_blocklist(user_id, request.domain, request.list_type)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN
+            )
+        new_id, ok = self.blocklist_service.add_blocklist(
+            user_id, request.domain, request.list_type
+        )
         if not ok:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=BLOCKLIST_ALREADY_EXISTS)
-        return EditBlockListResponse(user_id=user_id, domain=request.domain, list_type=request.list_type, status=ResponseStatus.SUCCESS, id=new_id)
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, detail=BLOCKLIST_ALREADY_EXISTS
+            )
+        return EditBlockListResponse(
+            user_id=user_id,
+            domain=request.domain,
+            list_type=request.list_type,
+            status=ResponseStatus.SUCCESS,
+            id=new_id,
+        )
 
-    async def delete_blocklist(self, blocklist_id: str, x_auth_token: Annotated[str, Header()] = None):
+    async def delete_blocklist(
+        self, blocklist_id: str, x_auth_token: Annotated[str, Header()] = None
+    ):
         """Delete an url from blocklist."""
         if not ObjectId.is_valid(blocklist_id):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=BLOCKLIST_ID_INVALID)
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=BLOCKLIST_ID_INVALID
+            )
         user_id, ok = self.validate_token(x_auth_token)
         if not ok:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN
+            )
         ok = self.blocklist_service.delete_blocklist(user_id, blocklist_id)
         if not ok:
             raise HTTPException(
@@ -134,6 +162,7 @@ class BlockListAPI(BaseAPI):
             r"(\/[^\s]*)?$"  # Optional path (e.g., /path/to/page)
         )
         return url_regex.match(domain)
+
 
 class UserAPI(BaseAPI):
     """class to encapsulate the user API endpoints."""
@@ -162,27 +191,48 @@ class UserAPI(BaseAPI):
         """Get user app token."""
         token = request.token
         if token is None:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=INVALID_TOKEN)
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=INVALID_TOKEN
+            )
 
         user = self.user_service.get_user_app_token(token)
         if user.jwt == "":
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN)
-        return GetUserAppTokenResponse(jwt=user.jwt, email=user.email, picture=user.picture)
-    
-    async def update_user_status(self, request: UpdateUserStatusRequest, x_auth_token: Annotated[str, Header()] = None):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN
+            )
+        return GetUserAppTokenResponse(
+            jwt=user.jwt, email=user.email, picture=user.picture
+        )
+
+    async def update_user_status(
+        self,
+        request: UpdateUserStatusRequest,
+        x_auth_token: Annotated[str, Header()] = None,
+    ):
         """Update user status."""
         user_id, ok = self.validate_token(x_auth_token)
         if not ok:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN
+            )
         ok = self.user_service.update_user_status(user_id, request.user_status)
         if not ok:
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=USERSTATUS_NOT_UPDATED)
-        return UpdateUserStatusResponse(user_id=user_id, user_status=request.user_status, status=ResponseStatus.SUCCESS)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=USERSTATUS_NOT_UPDATED,
+            )
+        return UpdateUserStatusResponse(
+            user_id=user_id,
+            user_status=request.user_status,
+            status=ResponseStatus.SUCCESS,
+        )
 
-class AnalyticsListAPI(object):
+
+class AnalyticsListAPI(BaseAPI):
     """class to encapsulate the analytics API endpoint."""
 
     def __init__(self, cfg: Config):
+        super().__init__(cfg)
         self.router = APIRouter()
         self.analyticslist_service = AnalyticsListService(cfg)
         self._register_routes()
@@ -190,17 +240,47 @@ class AnalyticsListAPI(object):
     def _register_routes(self):
         """Register API routes."""
         self.router.add_api_route(
-            path="/analytics/{user_id}",
+            path="/analytics",
             endpoint=self.list_analytics,
             methods=["GET"],
             response_model=AnalyticsListResponse,
             summary="List all analytics for user",
         )
 
-    async def list_analytics(self, user_id: str):
+        self.router.add_api_route(
+            path="/analytics/weeklysummary",
+            endpoint=self.list_analytics_weekly_per_session_type,
+            methods=["GET"],
+            response_model=ListAnalyticsWeeklySummaryResponse,
+            summary="List all analytics for user per session type",
+        )
+
+    async def list_analytics(self, x_auth_token: Annotated[str, Header()] = None):
         """List all analytics for user."""
+        user_id, ok = self.validate_token(x_auth_token)
+        if not ok:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN
+            )
         response = self.analyticslist_service.get_analytics(user_id)
         return response
+
+    async def list_analytics_weekly_per_session_type(
+        self, x_auth_token: Annotated[str, Header()] = None
+    ):
+        """List all analytics for user per session tye."""
+        user_id, ok = self.validate_token(x_auth_token)
+        if not ok:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN
+            )
+        response = self.analyticslist_service.get_weekly_analytics_per_session_type(
+            user_id=user_id
+        )
+        return ListAnalyticsWeeklySummaryResponse(
+            summary=response, status=ResponseStatus.SUCCESS
+        )
+
 
 class FocusTimerAPI(BaseAPI):
     """class to encapsulate the focustimer API endpoints."""
@@ -243,57 +323,107 @@ class FocusTimerAPI(BaseAPI):
             summary="Get all focus sessions of specific status, fetch all by default",
         )
 
-    async def add_focus_session(self, request: FocusSessionModel, x_auth_token: Annotated[str, Header()] = None):
+    async def add_focus_session(
+        self, request: FocusSessionModel, x_auth_token: Annotated[str, Header()] = None
+    ):
         """Add a focus session."""
         user_id, ok = self.validate_token(x_auth_token)
         if not ok:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN)
-        session_id, ok = self.timer_service.add_focus_session(user_id, request.session_status, request.start_date, request.start_time, request.duration, request.break_duration, request.session_type, request.remaining_focus_time, request.remaining_break_time)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN
+            )
+        session_id, ok = self.timer_service.add_focus_session(
+            user_id,
+            request.session_status,
+            request.start_date,
+            request.start_time,
+            request.duration,
+            request.break_duration,
+            request.session_type,
+            request.remaining_focus_time,
+            request.remaining_break_time,
+        )
         if not ok:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=FOCUSSESSION_CONFLICT)
-        return EditFocusSessionResponse(user_id=user_id, id=session_id, status=ResponseStatus.SUCCESS)
-    
-    async def modify_focus_session(self, session_id: str, request: FocusSessionModel, x_auth_token: Annotated[str, Header()] = None):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, detail=FOCUSSESSION_CONFLICT
+            )
+        return EditFocusSessionResponse(
+            user_id=user_id, id=session_id, status=ResponseStatus.SUCCESS
+        )
+
+    async def modify_focus_session(
+        self,
+        session_id: str,
+        request: FocusSessionModel,
+        x_auth_token: Annotated[str, Header()] = None,
+    ):
         """Modify a focus session."""
         user_id, ok = self.validate_token(x_auth_token)
         if not ok:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN)
-        
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN
+            )
+
         updates = {k: v for k, v in request.dict().items() if v is not None}
         if not updates:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=FOCUSSESSION_NOT_UPDATED)
-        
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=FOCUSSESSION_NOT_UPDATED
+            )
+
         ok = self.timer_service.modify_focus_session(user_id, session_id, **updates)
         if not ok:
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=FOCUSSESSION_NOT_UPDATED)
-        return EditFocusSessionResponse(user_id=user_id, id=session_id, status=ResponseStatus.SUCCESS)
-    
-    async def delete_focus_session(self, session_id: str, x_auth_token: Annotated[str, Header()] = None):
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=FOCUSSESSION_NOT_UPDATED,
+            )
+        return EditFocusSessionResponse(
+            user_id=user_id, id=session_id, status=ResponseStatus.SUCCESS
+        )
+
+    async def delete_focus_session(
+        self, session_id: str, x_auth_token: Annotated[str, Header()] = None
+    ):
         """Delete a focus session."""
         user_id, ok = self.validate_token(x_auth_token)
         if not ok:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN
+            )
         ok = self.timer_service.delete_focus_session(user_id, session_id)
         if not ok:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=FOCUSSESSION_NOT_FOUND)
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail=FOCUSSESSION_NOT_FOUND
+            )
         return Response(status_code=status.HTTP_204_NO_CONTENT)
-    
-    async def get_next_focus_session(self, x_auth_token: Annotated[str, Header()] = None):
+
+    async def get_next_focus_session(
+        self, x_auth_token: Annotated[str, Header()] = None
+    ):
         """Get next upcoming focus session."""
         user_id, ok = self.validate_token(x_auth_token)
         if not ok:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN
+            )
         response = self.timer_service.get_next_focus_session(user_id)
-        return GetNextFocusSessionResponse(focus_session=response, status=ResponseStatus.SUCCESS)
-    
-    async def get_all_focus_session(self, x_auth_token: Annotated[str, Header()] = None, session_status: int = None):
+        return GetNextFocusSessionResponse(
+            focus_session=response, status=ResponseStatus.SUCCESS
+        )
+
+    async def get_all_focus_session(
+        self, x_auth_token: Annotated[str, Header()] = None, session_status: int = None
+    ):
         """Get focus sessions of specific status, default is fetching all."""
         user_id, ok = self.validate_token(x_auth_token)
         if not ok:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN
+            )
         response = self.timer_service.get_all_focus_session(user_id, session_status)
-        return GetAllFocusSessionResponse(focus_sessions=response, status=ResponseStatus.SUCCESS)
-        
+        return GetAllFocusSessionResponse(
+            focus_sessions=response, status=ResponseStatus.SUCCESS
+        )
+
 
 def create_app(cfg: Config):
     _app = FastAPI()
