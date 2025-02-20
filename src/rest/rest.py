@@ -240,7 +240,7 @@ class AnalyticsListAPI(BaseAPI):
     def _register_routes(self):
         """Register API routes."""
         self.router.add_api_route(
-            path="/analytics/{user_id}",
+            path="/analytics",
             endpoint=self.list_analytics,
             methods=["GET"],
             response_model=AnalyticsListResponse,
@@ -248,7 +248,7 @@ class AnalyticsListAPI(BaseAPI):
         )
 
         self.router.add_api_route(
-            path="/analytics/weeklysummary/{user_id}",
+            path="/analytics/weeklysummary",
             endpoint=self.list_analytics_weekly_per_session_type,
             methods=["GET"],
             response_model=ListAnalyticsWeeklySummaryResponse,

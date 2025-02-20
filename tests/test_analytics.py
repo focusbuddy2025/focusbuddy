@@ -54,7 +54,7 @@ class TestAnalytics(unittest.TestCase):
         collection.insert_one(test_entry)
 
         response = self.app.get(
-            "/api/v1/analytics/{user_id}", headers={"x-auth-token": self.jwt_token}
+            "/api/v1/analytics", headers={"x-auth-token": self.jwt_token}
         )
         self.assertEqual(response.status_code, 200)
         self.assertDictEqual(
@@ -116,7 +116,7 @@ class TestAnalytics(unittest.TestCase):
         collection.insert_one(test_entry_3)
 
         response = self.app.get(
-            "/api/v1/analytics/weeklysummary/{user_id}",
+            "/api/v1/analytics/weeklysummary",
             headers={"x-auth-token": self.jwt_token},
         )
 
