@@ -19,6 +19,7 @@ class BlockListType(IntEnum):
     OTHER: int = 3
     PERMANENT: int = 4
 
+
 class UserStatus(IntEnum):
     WORK: int = 0
     STUDY: int = 1
@@ -26,17 +27,20 @@ class UserStatus(IntEnum):
     OTHER: int = 3
     IDLE: int = 4
 
+
 class SessionStatus(IntEnum):
     UPCOMING: int = 0
     ONGOING: int = 1
     PAUSED: int = 2
     COMPLETED: int = 3
 
+
 class SessionType(IntEnum):
     WORK: int = 0
     STUDY: int = 1
     PERSONAL: int = 2
     OTHER: int = 3
+
 
 class BlockListModel(BaseModel):
     domain: str
@@ -76,19 +80,34 @@ class GetUserAppTokenResponse(BaseModel):
 class GetUserAppTokenRequest(BaseModel):
     token: str
 
+
 class UpdateUserStatusRequest(BaseModel):
     user_status: UserStatus
+
 
 class UpdateUserStatusResponse(BaseModel):
     status: ResponseStatus = ResponseStatus.SUCCESS
     user_id: str
     user_status: UserStatus
 
+
 class AnalyticsListResponse(BaseModel):
     daily: int = 0
     weekly: int = 0
     completed_sessions: int = 0
     status: ResponseStatus = ResponseStatus.SUCCESS
+
+
+class AnalyticsWeeklySummaryResponse(BaseModel):
+    duration: int = 0
+    user_id: str
+    session_type: SessionType
+
+
+class ListAnalyticsWeeklySummaryResponse(BaseModel):
+    summary: List[AnalyticsWeeklySummaryResponse]
+    status: ResponseStatus = ResponseStatus.SUCCESS
+
 
 class FocusSessionModel(BaseModel):
     session_status: Optional[SessionStatus] = None
@@ -99,6 +118,7 @@ class FocusSessionModel(BaseModel):
     session_type: Optional[SessionType] = None
     remaining_focus_time: Optional[int] = None
     remaining_break_time: Optional[int] = None
+
 
 class GetFocusSessionResponse(BaseModel):
     session_id: Optional[str] = None
@@ -115,18 +135,23 @@ class GetFocusSessionResponse(BaseModel):
     def set_session_id(cls, values):
         # If _id exists, map it to session_id
         if "_id" in values:
-            values["session_id"] = str(values["_id"])  # MongoDB's _id is an ObjectId, so we convert it to string
+            values["session_id"] = str(
+                values["_id"]
+            )  # MongoDB's _id is an ObjectId, so we convert it to string
             del values["_id"]  # Remove the original _id field
         return values
+
 
 class EditFocusSessionResponse(BaseModel):
     status: ResponseStatus = ResponseStatus.SUCCESS
     user_id: str
     id: str
 
+
 class GetNextFocusSessionResponse(BaseModel):
     focus_session: Optional[GetFocusSessionResponse] = None
     status: ResponseStatus = ResponseStatus.SUCCESS
+
 
 class GetAllFocusSessionResponse(BaseModel):
     focus_sessions: list[GetFocusSessionResponse]
