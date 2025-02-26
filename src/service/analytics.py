@@ -12,6 +12,11 @@ from src.config import Config
 from src.db import MongoDB
 
 
+def _convert_to_hours(time_in_seconds):
+    """converts time from seconds to hours"""
+    return round(time_in_seconds / 3600, 2)
+
+
 class AnalyticsListService(object):
     """class to encapsulate the analytics service."""
 
@@ -30,8 +35,8 @@ class AnalyticsListService(object):
             )
 
         return AnalyticsListResponse(
-            daily=analytics_result["daily"],
-            weekly=analytics_result["weekly"],
+            daily=_convert_to_hours(analytics_result["daily"]),
+            weekly=_convert_to_hours(analytics_result["weekly"]),
             completed_sessions=analytics_result["completed_sessions"],
             status=ResponseStatus.SUCCESS,
         )
@@ -82,7 +87,7 @@ class AnalyticsListService(object):
 
         results = [
             AnalyticsWeeklySummaryResponse(
-                duration=session["duration"],
+                duration=_convert_to_hours(session["duration"]),
                 user_id=session["user_id"]["user_id"],
                 session_type=session["user_id"]["session_type"],
             )
