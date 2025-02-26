@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 ubuntu
+FROM ubuntu
 
 ENV PATH="/home/focusbuddy/.local/bin:$PATH"
 
@@ -18,13 +18,10 @@ ADD --chown=focusbuddy:focusbuddy cron /home/focusbuddy/cron
 
 RUN rm -rf /home/focusbuddy/cron/*.toml*
 
-ENV TINI_VERSION v0.19.0
-ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
-RUN chmod +x /tini
 
 USER focusbuddy
 
-RUN python3 cron/utils/install_cron.py
 RUN pip install -r cron/requirements.txt --user --break-system-packages
+RUN python3 cron/utils/install_cron.py
 
-ENTRYPOINT ["/tini", "--", "tail -f /dev/null"]
+ENTRYPOINT ["tail", "-f", "/dev/null"]
