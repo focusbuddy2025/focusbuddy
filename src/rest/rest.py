@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # -*- encoding=utf8 -*-
-import datetime
 import re
 from typing import Annotated
+
 from bson import ObjectId
 from fastapi import APIRouter, FastAPI, HTTPException, Response, status, Header
+
 from src.api import (
     AddBlockListRequest,
     AnalyticsListResponse,
@@ -33,9 +34,8 @@ from src.rest.error import (
     INVALID_TOKEN,
     USERSTATUS_NOT_UPDATED,
 )
-
-from src.service.user import UserService
 from src.service import BlockListService, FocusTimerService, AnalyticsListService
+from src.service.user import UserService
 
 
 class BaseAPI:
@@ -52,9 +52,6 @@ class BaseAPI:
             return "", False
         user = self.user_service.decode_user(token)
         if user.user_id == "":
-            return "", False
-        now = datetime.datetime.timestamp(datetime.datetime.utcnow())
-        if float(user.exp) < now:
             return "", False
         return user.user_id, True
 
@@ -366,7 +363,7 @@ class FocusTimerAPI(BaseAPI):
         updates = {k: v for k, v in request.dict().items() if v is not None}
         if not updates:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=FOCUSSESSION_NOT_UPDATED)
-        
+
         result = self.timer_service.modify_focus_session(user_id, session_id, **updates)
 
         if result == "conflict":
@@ -374,7 +371,7 @@ class FocusTimerAPI(BaseAPI):
         if not result:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=FOCUSSESSION_NOT_UPDATED)
         return EditFocusSessionResponse(user_id=user_id, id=session_id, status=ResponseStatus.SUCCESS)
-    
+
     async def delete_focus_session(self, session_id: str, x_auth_token: Annotated[str, Header()] = None):
         """Delete a focus session."""
         user_id, ok = self.validate_token(x_auth_token)
