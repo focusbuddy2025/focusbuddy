@@ -60,8 +60,8 @@ class TestAnalytics(unittest.TestCase):
         self.assertDictEqual(
             response.json(),
             {
-                "daily": 120,
-                "weekly": 600,
+                "daily": 0.03,
+                "weekly": 0.17,
                 "completed_sessions": 2,
                 "status": ResponseStatus.SUCCESS,
             },
@@ -123,7 +123,7 @@ class TestAnalytics(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         expected_summary_response = [
             {
-                "duration": 61,
+                "duration": 0.02,
                 "user_id": "focusbuddy_test",
                 "session_type": 0,
             }
