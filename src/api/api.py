@@ -92,14 +92,14 @@ class UpdateUserStatusResponse(BaseModel):
 
 
 class AnalyticsListResponse(BaseModel):
-    daily: int = 0
-    weekly: int = 0
+    daily: float = 0
+    weekly: float = 0
     completed_sessions: int = 0
     status: ResponseStatus = ResponseStatus.SUCCESS
 
 
 class AnalyticsWeeklySummaryResponse(BaseModel):
-    duration: int = 0
+    duration: float = 0
     user_id: str
     session_type: SessionType
 
