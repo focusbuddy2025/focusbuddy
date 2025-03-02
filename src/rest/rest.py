@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- encoding=utf8 -*-
+import os
 import re
 from typing import Annotated
 
@@ -99,9 +100,9 @@ class BlockListAPI(BaseAPI):
         return ListBlockListResponse(blocklist=response, status=ResponseStatus.SUCCESS)
 
     async def add_blocklist(
-        self,
-        request: AddBlockListRequest,
-        x_auth_token: Annotated[str, Header()] = None,
+            self,
+            request: AddBlockListRequest,
+            x_auth_token: Annotated[str, Header()] = None,
     ):
         """Add an url to blocklist."""
         if not self.validate_domain(request.domain):
@@ -129,7 +130,7 @@ class BlockListAPI(BaseAPI):
         )
 
     async def delete_blocklist(
-        self, blocklist_id: str, x_auth_token: Annotated[str, Header()] = None
+            self, blocklist_id: str, x_auth_token: Annotated[str, Header()] = None
     ):
         """Delete an url from blocklist."""
         if not ObjectId.is_valid(blocklist_id):
@@ -163,9 +164,10 @@ class BlockListAPI(BaseAPI):
 class UserAPI(BaseAPI):
     """class to encapsulate the user API endpoints."""
 
-    def __init__(self, cfg: Config):
+    def __init__(self, cfg: Config, test_user_id=None):
         super().__init__(cfg)
         self._register_routes()
+        self.test_user_id = test_user_id
 
     def _register_routes(self):
         """Register API routes."""
@@ -184,6 +186,10 @@ class UserAPI(BaseAPI):
         )
 
     async def get_user_app_token(self, request: GetUserAppTokenRequest):
+        if os.getenv("ENV") == "test":
+            jwt = self.user_service._generate_jwt(self.test_user_id, "focusbuddy.test@gmail.com")
+            return GetUserAppTokenResponse(jwt=jwt, email="focusbuddy.test@gmail.com", picture="")
+
         """Get user app token."""
         token = request.token
         if token is None:
@@ -201,9 +207,9 @@ class UserAPI(BaseAPI):
         )
 
     async def update_user_status(
-        self,
-        request: UpdateUserStatusRequest,
-        x_auth_token: Annotated[str, Header()] = None,
+            self,
+            request: UpdateUserStatusRequest,
+            x_auth_token: Annotated[str, Header()] = None,
     ):
         """Update user status."""
         user_id, ok = self.validate_token(x_auth_token)
@@ -262,7 +268,7 @@ class AnalyticsListAPI(BaseAPI):
         return response
 
     async def list_analytics_weekly_per_session_type(
-        self, x_auth_token: Annotated[str, Header()] = None
+            self, x_auth_token: Annotated[str, Header()] = None
     ):
         """List all analytics for user per session tye."""
         user_id, ok = self.validate_token(x_auth_token)
@@ -320,7 +326,7 @@ class FocusTimerAPI(BaseAPI):
         )
 
     async def add_focus_session(
-        self, request: FocusSessionModel, x_auth_token: Annotated[str, Header()] = None
+            self, request: FocusSessionModel, x_auth_token: Annotated[str, Header()] = None
     ):
         """Add a focus session."""
         user_id, ok = self.validate_token(x_auth_token)
@@ -348,10 +354,10 @@ class FocusTimerAPI(BaseAPI):
         )
 
     async def modify_focus_session(
-        self,
-        session_id: str,
-        request: FocusSessionModel,
-        x_auth_token: Annotated[str, Header()] = None,
+            self,
+            session_id: str,
+            request: FocusSessionModel,
+            x_auth_token: Annotated[str, Header()] = None,
     ):
         """Modify a focus session."""
         user_id, ok = self.validate_token(x_auth_token)
@@ -387,7 +393,7 @@ class FocusTimerAPI(BaseAPI):
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     async def get_next_focus_session(
-        self, x_auth_token: Annotated[str, Header()] = None
+            self, x_auth_token: Annotated[str, Header()] = None
     ):
         """Get next upcoming focus session."""
         user_id, ok = self.validate_token(x_auth_token)
@@ -401,7 +407,7 @@ class FocusTimerAPI(BaseAPI):
         )
 
     async def get_all_focus_session(
-        self, x_auth_token: Annotated[str, Header()] = None, session_status: int = None
+            self, x_auth_token: Annotated[str, Header()] = None, session_status: int = None
     ):
         """Get focus sessions of specific status, default is fetching all."""
         user_id, ok = self.validate_token(x_auth_token)
@@ -423,8 +429,14 @@ def create_app(cfg: Config):
     _app.include_router(blocklist_api.router, prefix=api_version)
     analyticslist_api = AnalyticsListAPI(cfg)
     _app.include_router(analyticslist_api.router, prefix=api_version)
-    user_api = UserAPI(cfg)
-    _app.include_router(user_api.router, prefix=api_version)
+    if os.getenv("ENV") == "test":
+        user_service = UserService(cfg)
+        user_id = user_service._get_user_id_from_db("focusbuddy.test@gmail.com")
+        user_api = UserAPI(cfg, user_id)
+        _app.include_router(user_api.router, prefix=api_version)
+    else:
+        user_api = UserAPI(cfg)
+        _app.include_router(user_api.router, prefix=api_version)
     return _app
 
 

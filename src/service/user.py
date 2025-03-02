@@ -2,6 +2,7 @@
 # -*- encoding=utf8 -*-
 
 import datetime
+import os
 from dataclasses import dataclass
 
 import jwt
@@ -10,7 +11,7 @@ import requests
 from src.config import Config
 from src.db import MongoDB
 from src.api import UserStatus
-from bson import ObjectId 
+from bson import ObjectId
 
 
 @dataclass
@@ -50,7 +51,7 @@ class UserService(object):
         if user is None:
             res = collection.insert_one({"email": email, "status": UserStatus.IDLE})
             return str(res.inserted_id)
-        
+
         if "status" not in user:
             collection.update_one({"_id": user["_id"]}, {"$set": {"status": UserStatus.IDLE}})
 
@@ -86,7 +87,7 @@ class UserService(object):
         except Exception as e:
             print(e)
             return DecodedUser(user_id="", email="", exp=0)
-        
+
     def update_user_status(self, user_id: str, status: str):
         """Update user status."""
         collection = self.db.get_collection("user")
