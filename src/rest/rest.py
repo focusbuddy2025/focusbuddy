@@ -2,6 +2,8 @@
 # -*- encoding=utf8 -*-
 import os
 import re
+import string
+import random
 from typing import Annotated
 
 from bson import ObjectId
@@ -164,10 +166,9 @@ class BlockListAPI(BaseAPI):
 class UserAPI(BaseAPI):
     """class to encapsulate the user API endpoints."""
 
-    def __init__(self, cfg: Config, test_user_id=None):
+    def __init__(self, cfg: Config):
         super().__init__(cfg)
         self._register_routes()
-        self.test_user_id = test_user_id
 
     def _register_routes(self):
         """Register API routes."""
@@ -187,8 +188,15 @@ class UserAPI(BaseAPI):
 
     async def get_user_app_token(self, request: GetUserAppTokenRequest):
         if os.getenv("ENV") == "test":
-            jwt = self.user_service._generate_jwt(self.test_user_id, "focusbuddy.test@gmail.com")
-            return GetUserAppTokenResponse(jwt=jwt, email="focusbuddy.test@gmail.com", picture="")
+            alphabet = string.ascii_lowercase + string.digits
+
+            def random_choice():
+                return ''.join(random.choices(alphabet, k=8))
+
+            test_user_email = f"focusbuddy.test+{random_choice()}@gmail.com"
+            test_user_id = self.user_service._get_user_id_from_db(test_user_email)
+            jwt = self.user_service._generate_jwt(test_user_id, test_user_email)
+            return GetUserAppTokenResponse(jwt=jwt, email=test_user_email, picture="")
 
         """Get user app token."""
         token = request.token
@@ -429,14 +437,8 @@ def create_app(cfg: Config):
     _app.include_router(blocklist_api.router, prefix=api_version)
     analyticslist_api = AnalyticsListAPI(cfg)
     _app.include_router(analyticslist_api.router, prefix=api_version)
-    if os.getenv("ENV") == "test":
-        user_service = UserService(cfg)
-        user_id = user_service._get_user_id_from_db("focusbuddy.test@gmail.com")
-        user_api = UserAPI(cfg, user_id)
-        _app.include_router(user_api.router, prefix=api_version)
-    else:
-        user_api = UserAPI(cfg)
-        _app.include_router(user_api.router, prefix=api_version)
+    user_api = UserAPI(cfg)
+    _app.include_router(user_api.router, prefix=api_version)
     return _app
 
 
