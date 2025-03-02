@@ -187,7 +187,7 @@ class UserAPI(BaseAPI):
         )
 
     async def get_user_app_token(self, request: GetUserAppTokenRequest):
-        if os.getenv("ENV") == "test":
+        if os.getenv("ENV") == "E2E":
             alphabet = string.ascii_lowercase + string.digits
 
             def random_choice():
