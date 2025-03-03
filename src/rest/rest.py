@@ -415,7 +415,7 @@ class FocusTimerAPI(BaseAPI):
         )
 
     async def get_all_focus_session(
-            self, x_auth_token: Annotated[str, Header()] = None, session_status: int = None
+            self, x_auth_token: Annotated[str, Header()] = None, session_status: str = None
     ):
         """Get focus sessions of specific status, default is fetching all."""
         user_id, ok = self.validate_token(x_auth_token)
@@ -423,6 +423,8 @@ class FocusTimerAPI(BaseAPI):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN
             )
+        if session_status:
+            session_status = [int(status) for status in session_status.split(",")]
         response = self.timer_service.get_all_focus_session(user_id, session_status)
         return GetAllFocusSessionResponse(
             focus_sessions=response, status=ResponseStatus.SUCCESS

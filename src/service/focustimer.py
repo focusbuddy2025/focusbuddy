@@ -85,13 +85,13 @@ class FocusTimerService(object):
         
         return GetFocusSessionResponse(**session) if session else None
     
-    def get_all_focus_session(self, user_id: str, session_status: int = None) -> list[GetFocusSessionResponse]:
+    def get_all_focus_session(self, user_id: str, session_status: list[int] = None) -> list[GetFocusSessionResponse]:
         """Get focus sessions of specific status, default is fetching all."""
         collection = self.db.get_collection("focus_timer")
 
         query = {"user_id": user_id}
         if session_status is not None:
-            query["session_status"] = session_status
+            query["session_status"] = {"$in": session_status}
 
         session_cursor = collection.find(query)
 
