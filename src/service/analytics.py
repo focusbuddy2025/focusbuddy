@@ -142,22 +142,22 @@ class AnalyticsListService(object):
             status=ResponseStatus.SUCCESS,
         )
 
-    # def get_analytics(self, user_id: str) -> AnalyticsListResponse:
-    #     """Get analytics per user."""
-    #     collection = self.db.get_collection("analytics")
-    #     query = {"user_id": user_id}
-    #     analytics_result: dict = collection.find_one(query)
-    #     if analytics_result is None:
-    #         return AnalyticsListResponse(
-    #             daily=0, weekly=0, completed_sessions=0, status=ResponseStatus.FAILED
-    #         )
 
-    #     return AnalyticsListResponse(
-    #         daily=_convert_to_hours(analytics_result["daily"]),
-    #         weekly=_convert_to_hours(analytics_result["weekly"]),
-    #         completed_sessions=analytics_result["completed_sessions"],
-    #         status=ResponseStatus.SUCCESS,
-    #     )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     def get_weekly_analytics_per_session_type(
         self, user_id: str
