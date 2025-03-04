@@ -3,9 +3,9 @@
 
 import typer
 from rich import print
-from src.config import Config
 
 from cron.cmd import AnalyticsCron
+from cron.config import Config
 
 app = typer.Typer()
 analytics_cron = AnalyticsCron(cfg=Config)
