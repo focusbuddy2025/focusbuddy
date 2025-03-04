@@ -120,6 +120,17 @@ class AnalyticsListService(object):
 
     def get_analytics(self, user_id: str) -> AnalyticsListResponse:
         """Get analytics per user."""
+        user_col = self.db.get_collection("focus_timer")
+        query = {"user_id": user_id}
+        user_exists = user_col.find_one(query)
+        if user_exists is None:
+            return AnalyticsListResponse(
+                daily=0.0,
+                weekly=0.0,
+                completed_sessions=0,
+                status=ResponseStatus.FAILED,
+            )
+
         daily_total = self._get_daily_focus_total(user_id)
         weekly_total = self._get_weekly_focus_total(user_id)
         completed_sessions_total = self._all_completed_sessions(user_id)
