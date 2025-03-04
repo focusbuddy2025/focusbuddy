@@ -31,15 +31,6 @@ services:
       start_period: 30s
       timeout: 10s
 
-  cron:
-    build:
-      context: ..
-      dockerfile: scripts/Dockerfile.cron
-    environment:
-      DB_HOST: mongodb
-    depends_on:
-      mongodb:
-        condition: service_healthy
 
 
 
