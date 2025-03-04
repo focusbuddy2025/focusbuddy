@@ -123,7 +123,10 @@ class FocusTimerService(object):
 
         collection = self.db.get_collection("focus_timer")
 
-        query = {"user_id": user_id}
+        query = {
+            "user_id": user_id,
+            "session_status": {"$ne": SessionStatus.COMPLETED},
+        }
         if exclude_session_id:
             query["_id"] = {"$ne": ObjectId(exclude_session_id)}
 
