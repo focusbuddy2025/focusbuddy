@@ -2,6 +2,7 @@
 # -*- encoding=utf8 -*-
 import unittest
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from src.api import ResponseStatus, SessionStatus, SessionType
 from src.config import Config
@@ -41,14 +42,22 @@ class TestAnalytics(unittest.TestCase):
         self.service.db = self.db
 
         # Insert test values #
-        collection = self.db.get_collection("analytics")
+        collection = self.db.get_collection("focus_timer")
 
         test_entry = {
-            "user_id": "focusbuddy_test",
-            "daily": 120,
-            "weekly": 600,
-            "completed_sessions": 2,
-            "active": True,
+            "user_id": self.user_id,
+            "session_status": SessionStatus.COMPLETED,
+            "start_date": datetime.now(ZoneInfo("America/Toronto")).strftime(
+                "%m/%d/%Y"
+            ),
+            "start_time": datetime.now(ZoneInfo("America/Toronto")).strftime(
+                "%m-%M-%S"
+            ),
+            "duration": 7200,
+            "break_duration": 30,
+            "session_type": SessionType.WORK,
+            "remaining_focus_time": 60,
+            "remaining_break_time": 60,
         }
 
         collection.insert_one(test_entry)
@@ -60,9 +69,9 @@ class TestAnalytics(unittest.TestCase):
         self.assertDictEqual(
             response.json(),
             {
-                "daily": 0.03,
-                "weekly": 0.17,
-                "completed_sessions": 2,
+                "daily": 2.00,
+                "weekly": 2.00,
+                "completed_sessions": 1,
                 "status": ResponseStatus.SUCCESS,
             },
         )
@@ -78,10 +87,14 @@ class TestAnalytics(unittest.TestCase):
         test_entry_1 = {
             "user_id": self.user_id,
             "session_status": SessionStatus.COMPLETED,
-            "start_date": datetime.now().strftime("%Y-%m-%d"),
-            "start_time": datetime.now().strftime("%H-%M-%S"),
-            "duration": 1,
-            "break_duration": 1,
+            "start_date": datetime.now(ZoneInfo("America/Toronto")).strftime(
+                "%m/%d/%Y"
+            ),
+            "start_time": datetime.now(ZoneInfo("America/Toronto")).strftime(
+                "%m-%M-%S"
+            ),
+            "duration": 720,
+            "break_duration": 10,
             "session_type": SessionType.WORK,
             "remaining_focus_time": 60,
             "remaining_break_time": 60,
@@ -90,8 +103,12 @@ class TestAnalytics(unittest.TestCase):
         test_entry_2 = {
             "user_id": self.user_id,
             "session_status": SessionStatus.UPCOMING,
-            "start_date": datetime.now().strftime("%Y-%m-%d"),
-            "start_time": datetime.now().strftime("%H-%M-%S"),
+            "start_date": datetime.now(ZoneInfo("America/Toronto")).strftime(
+                "%m/%d/%Y"
+            ),
+            "start_time": datetime.now(ZoneInfo("America/Toronto")).strftime(
+                "%H-%M-%S"
+            ),
             "duration": 20,
             "break_duration": 1,
             "session_type": SessionType.WORK,
@@ -102,8 +119,12 @@ class TestAnalytics(unittest.TestCase):
         test_entry_3 = {
             "user_id": self.user_id,
             "session_status": SessionStatus.COMPLETED,
-            "start_date": (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d"),
-            "start_time": (datetime.now() - timedelta(days=1)).strftime("%H-%M-%S"),
+            "start_date": (
+                datetime.now(ZoneInfo("America/Toronto")) - timedelta(days=1)
+            ).strftime("%m/%d/%Y"),
+            "start_time": (
+                datetime.now(ZoneInfo("America/Toronto")) - timedelta(days=1)
+            ).strftime("%H-%M-%S"),
             "duration": 60,
             "break_duration": 1,
             "session_type": SessionType.WORK,
@@ -123,7 +144,7 @@ class TestAnalytics(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         expected_summary_response = [
             {
-                "duration": 0.02,
+                "duration": 0.22,
                 "user_id": "focusbuddy_test",
                 "session_type": 0,
             }
