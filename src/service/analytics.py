@@ -49,6 +49,7 @@ class AnalyticsListService(object):
                 "$group": {
                     "_id": None,
                     "total_duration": {"$sum": "$duration"},
+                    "remaining_time": {"$sum": "$remaining_focus_time"},
                 }
             },
         ]
@@ -56,7 +57,10 @@ class AnalyticsListService(object):
         daily_focus_total = list(collection.aggregate(pipeline))
 
         if daily_focus_total:
-            return _convert_to_hours(daily_focus_total[0]["total_duration"])
+            duration = daily_focus_total[0]["total_duration"] * 60
+            remaining_focus_time = daily_focus_total[0]["remaining_time"]
+            diff = _convert_to_hours(duration - remaining_focus_time)
+            return diff
         else:
             return 0
 
@@ -89,6 +93,7 @@ class AnalyticsListService(object):
                 "$group": {
                     "_id": None,
                     "total_duration": {"$sum": "$duration"},
+                    "remaining_time": {"$sum": "$remaining_focus_time"},
                 }
             },
         ]
@@ -96,7 +101,10 @@ class AnalyticsListService(object):
         weekly_focus_total = list(collection.aggregate(pipeline))
 
         if weekly_focus_total:
-            return _convert_to_hours(weekly_focus_total[0]["total_duration"])
+            duration = weekly_focus_total[0]["total_duration"] * 60
+            remaining_focus_time = weekly_focus_total[0]["remaining_time"]
+            diff = _convert_to_hours(duration - remaining_focus_time)
+            return diff
         else:
             return 0
 
@@ -142,23 +150,6 @@ class AnalyticsListService(object):
             status=ResponseStatus.SUCCESS,
         )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     def get_weekly_analytics_per_session_type(
         self, user_id: str
     ) -> list[AnalyticsWeeklySummaryResponse]:
@@ -190,6 +181,7 @@ class AnalyticsListService(object):
                 "$group": {
                     "_id": {"session_type": "$session_type", "user_id": "$user_id"},
                     "duration": {"$sum": "$duration"},
+                    "remaining_time": {"$sum": "$remaining_focus_time"},
                 }
             },
         ]
@@ -202,7 +194,9 @@ class AnalyticsListService(object):
 
         results = [
             AnalyticsWeeklySummaryResponse(
-                duration=_convert_to_hours(session["duration"]),
+                duration=_convert_to_hours(
+                    (session["duration"] * 60) - session["remaining_time"]
+                ),
                 user_id=session["user_id"]["user_id"],
                 session_type=session["user_id"]["session_type"],
             )
