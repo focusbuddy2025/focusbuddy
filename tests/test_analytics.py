@@ -53,7 +53,7 @@ class TestAnalytics(unittest.TestCase):
             "start_time": datetime.now(ZoneInfo("America/Toronto")).strftime(
                 "%m-%M-%S"
             ),
-            "duration": 7200,
+            "duration": 120,
             "break_duration": 30,
             "session_type": SessionType.WORK,
             "remaining_focus_time": 60,
@@ -69,8 +69,8 @@ class TestAnalytics(unittest.TestCase):
         self.assertDictEqual(
             response.json(),
             {
-                "daily": 2.00,
-                "weekly": 2.00,
+                "daily": 1.98,
+                "weekly": 1.98,
                 "completed_sessions": 1,
                 "status": ResponseStatus.SUCCESS,
             },
@@ -93,7 +93,7 @@ class TestAnalytics(unittest.TestCase):
             "start_time": datetime.now(ZoneInfo("America/Toronto")).strftime(
                 "%m-%M-%S"
             ),
-            "duration": 720,
+            "duration": 120,
             "break_duration": 10,
             "session_type": SessionType.WORK,
             "remaining_focus_time": 60,
@@ -144,7 +144,7 @@ class TestAnalytics(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         expected_summary_response = [
             {
-                "duration": 0.22,
+                "duration": 2.97,
                 "user_id": "focusbuddy_test",
                 "session_type": 0,
             }
