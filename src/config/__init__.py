@@ -20,6 +20,7 @@ class Config:
             self.db_user_name = os.getenv("DB_USER_NAME", "admin")
             self.db_password = os.getenv("DB_PASSWORD", "admin")
             self.db = os.getenv("DB", "focusbuddy")
+            self.db_uri = os.getenv("DB_URI", "")
 
             self.app_host = os.getenv("APP_HOST", "localhost")
             self.app_port = int(os.getenv("APP_PORT", 8000))

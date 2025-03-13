@@ -23,15 +23,18 @@ class MongoDB:
                 mongo.start()
                 cls._instance.client = mongo.get_connection_client()
             else:
-                cls._instance.client = MongoClient(
-                    cls._instance.cfg.db_host,
-                    cls._instance.cfg.db_port,
-                    username=cls._instance.cfg.db_user_name,
-                    password=cls._instance.cfg.db_password,
-                    timeoutMS=2000,
-                    socketTimeoutMS=2000,
-                    connectTimeoutMS=3000,
-                )
+                if cls._instance.cfg.db_uri != "":
+                    cls._instance.client = MongoClient(cls._instance.cfg.db_uri)
+                else:
+                    cls._instance.client = MongoClient(
+                        cls._instance.cfg.db_host,
+                        cls._instance.cfg.db_port,
+                        username=cls._instance.cfg.db_user_name,
+                        password=cls._instance.cfg.db_password,
+                        timeoutMS=2000,
+                        socketTimeoutMS=2000,
+                        connectTimeoutMS=3000,
+                    )
             cls._instance.db = cls._instance.client[cls._instance.cfg.db]
             cls._instance._init_index(
                 "blocklist",
