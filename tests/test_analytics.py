@@ -136,8 +136,13 @@ class TestAnalytics(unittest.TestCase):
         collection.insert_one(test_entry_2)
         collection.insert_one(test_entry_3)
 
+        start_date = (
+            datetime.now(ZoneInfo("America/Toronto")) - timedelta(days=1)
+        ).strftime("%m/%d/%Y")
+        end_date = datetime.now(ZoneInfo("America/Toronto")).strftime("%m/%d/%Y")
+
         response = self.app.get(
-            "/api/v1/analytics/weeklysummary",
+            f"/api/v1/analytics/weeklysummary?start_date={start_date}&end_date={end_date}",
             headers={"x-auth-token": self.jwt_token},
         )
 

@@ -151,27 +151,20 @@ class AnalyticsListService(object):
         )
 
     def get_weekly_analytics_per_session_type(
-        self, user_id: str
+        self, user_id: str, start_date: str, end_date: str
     ) -> list[AnalyticsWeeklySummaryResponse]:
         """Get weekly summary per user per session type"""
         collection = self.db.get_collection("focus_timer")
-        dow = datetime.now(ZoneInfo("America/Toronto")).isoweekday()
-        start_date_filter = datetime.now(ZoneInfo("America/Toronto")) - timedelta(
-            days=(dow)
-        )
-        if dow == 7:
-            start_date_filter = datetime.now(ZoneInfo("America/Toronto"))
-        end_date_filter = start_date_filter + timedelta(days=7)
 
-        start_date_str = start_date_filter.strftime("%m/%d/%Y")
-        end_date_str = end_date_filter.strftime("%m/%d/%Y")
+        start_date_str = start_date
+        end_date_str = end_date
 
         pipeline = [
             {
                 "$match": {
                     "start_date": {
                         "$gte": start_date_str,
-                        "$lt": end_date_str,
+                        "$lte": end_date_str,
                     },
                     "session_status": {"$eq": 3},
                     "user_id": {"$eq": user_id},

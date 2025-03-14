@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- encoding=utf8 -*-
 import os
+import random
 import re
 import string
-import random
-from typing import Annotated
+from datetime import datetime
+from typing import Annotated, Optional
 
 from bson import ObjectId
-from fastapi import APIRouter, FastAPI, HTTPException, Response, status, Header
+from fastapi import APIRouter, FastAPI, Header, HTTPException, Query, Response, status
 
 from src.api import (
     AddBlockListRequest,
@@ -37,7 +38,7 @@ from src.rest.error import (
     INVALID_TOKEN,
     USERSTATUS_NOT_UPDATED,
 )
-from src.service import BlockListService, FocusTimerService, AnalyticsListService
+from src.service import AnalyticsListService, BlockListService, FocusTimerService
 from src.service.user import UserService
 
 
@@ -102,9 +103,9 @@ class BlockListAPI(BaseAPI):
         return ListBlockListResponse(blocklist=response, status=ResponseStatus.SUCCESS)
 
     async def add_blocklist(
-            self,
-            request: AddBlockListRequest,
-            x_auth_token: Annotated[str, Header()] = None,
+        self,
+        request: AddBlockListRequest,
+        x_auth_token: Annotated[str, Header()] = None,
     ):
         """Add an url to blocklist."""
         if not self.validate_domain(request.domain):
@@ -132,7 +133,7 @@ class BlockListAPI(BaseAPI):
         )
 
     async def delete_blocklist(
-            self, blocklist_id: str, x_auth_token: Annotated[str, Header()] = None
+        self, blocklist_id: str, x_auth_token: Annotated[str, Header()] = None
     ):
         """Delete an url from blocklist."""
         if not ObjectId.is_valid(blocklist_id):
@@ -191,7 +192,7 @@ class UserAPI(BaseAPI):
             alphabet = string.ascii_lowercase + string.digits
 
             def random_choice():
-                return ''.join(random.choices(alphabet, k=8))
+                return "".join(random.choices(alphabet, k=8))
 
             test_user_email = f"focusbuddy.test+{random_choice()}@gmail.com"
             test_user_id = self.user_service._get_user_id_from_db(test_user_email)
@@ -215,9 +216,9 @@ class UserAPI(BaseAPI):
         )
 
     async def update_user_status(
-            self,
-            request: UpdateUserStatusRequest,
-            x_auth_token: Annotated[str, Header()] = None,
+        self,
+        request: UpdateUserStatusRequest,
+        x_auth_token: Annotated[str, Header()] = None,
     ):
         """Update user status."""
         user_id, ok = self.validate_token(x_auth_token)
@@ -276,16 +277,33 @@ class AnalyticsListAPI(BaseAPI):
         return response
 
     async def list_analytics_weekly_per_session_type(
-            self, x_auth_token: Annotated[str, Header()] = None
+        self,
+        x_auth_token: Annotated[str, Header()] = None,
+        start_date: Optional[str] = Query(None, description="Start date (MM/DD/YYYY)"),
+        end_date: Optional[str] = Query(None, description="End date (MM/DD/YYYY)"),
     ):
         """List all analytics for user per session tye."""
+
+        # Validate the date range
+        if start_date and end_date:
+            delta = (
+                datetime.strptime(end_date, "%m/%d/%Y")
+                - datetime.strptime(start_date, "%m/%d/%Y")
+            ).days
+            if delta > 30:
+                raise HTTPException(
+                    status_code=400, detail="Date range cannot exceed 30 days"
+                )
+
         user_id, ok = self.validate_token(x_auth_token)
         if not ok:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN
             )
         response = self.analyticslist_service.get_weekly_analytics_per_session_type(
-            user_id=user_id
+            user_id=user_id,
+            start_date=start_date,
+            end_date=end_date,
         )
         return ListAnalyticsWeeklySummaryResponse(
             summary=response, status=ResponseStatus.SUCCESS
@@ -334,7 +352,7 @@ class FocusTimerAPI(BaseAPI):
         )
 
     async def add_focus_session(
-            self, request: FocusSessionModel, x_auth_token: Annotated[str, Header()] = None
+        self, request: FocusSessionModel, x_auth_token: Annotated[str, Header()] = None
     ):
         """Add a focus session."""
         user_id, ok = self.validate_token(x_auth_token)
@@ -362,10 +380,10 @@ class FocusTimerAPI(BaseAPI):
         )
 
     async def modify_focus_session(
-            self,
-            session_id: str,
-            request: FocusSessionModel,
-            x_auth_token: Annotated[str, Header()] = None,
+        self,
+        session_id: str,
+        request: FocusSessionModel,
+        x_auth_token: Annotated[str, Header()] = None,
     ):
         """Modify a focus session."""
         user_id, ok = self.validate_token(x_auth_token)
@@ -376,17 +394,28 @@ class FocusTimerAPI(BaseAPI):
 
         updates = {k: v for k, v in request.dict().items() if v is not None}
         if not updates:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=FOCUSSESSION_NOT_UPDATED)
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=FOCUSSESSION_NOT_UPDATED
+            )
 
         result = self.timer_service.modify_focus_session(user_id, session_id, **updates)
 
         if result == "conflict":
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=FOCUSSESSION_CONFLICT)
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, detail=FOCUSSESSION_CONFLICT
+            )
         if not result:
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=FOCUSSESSION_NOT_UPDATED)
-        return EditFocusSessionResponse(user_id=user_id, id=session_id, status=ResponseStatus.SUCCESS)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=FOCUSSESSION_NOT_UPDATED,
+            )
+        return EditFocusSessionResponse(
+            user_id=user_id, id=session_id, status=ResponseStatus.SUCCESS
+        )
 
-    async def delete_focus_session(self, session_id: str, x_auth_token: Annotated[str, Header()] = None):
+    async def delete_focus_session(
+        self, session_id: str, x_auth_token: Annotated[str, Header()] = None
+    ):
         """Delete a focus session."""
         user_id, ok = self.validate_token(x_auth_token)
         if not ok:
@@ -401,7 +430,7 @@ class FocusTimerAPI(BaseAPI):
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     async def get_next_focus_session(
-            self, x_auth_token: Annotated[str, Header()] = None
+        self, x_auth_token: Annotated[str, Header()] = None
     ):
         """Get next upcoming focus session."""
         user_id, ok = self.validate_token(x_auth_token)
@@ -415,7 +444,7 @@ class FocusTimerAPI(BaseAPI):
         )
 
     async def get_all_focus_session(
-            self, x_auth_token: Annotated[str, Header()] = None, session_status: str = None
+        self, x_auth_token: Annotated[str, Header()] = None, session_status: str = None
     ):
         """Get focus sessions of specific status, default is fetching all."""
         user_id, ok = self.validate_token(x_auth_token)
