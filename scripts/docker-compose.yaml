@@ -14,6 +14,29 @@ services:
     environment:
       DB_HOST: mongodb
       APP_HOST: 0.0.0.0
+      SMTP_PASSWORD: cjdjlqijxkajcpgi
+      SMTP_USERNAME: ece651.group10@gmail.com
+      FROM_EMAIL: ece651.group10@gmail.com
+      TZ: "America/Toronto"
+
+  celery:
+    build:
+      context: ..
+      dockerfile: scripts/Dockerfile.celery
+    ports:
+      - "5555:5555"
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      DB_HOST: mongodb
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      SMTP_PASSWORD: placeholder
+      SMTP_USERNAME: ece651.group10@gmail.com
+      FROM_EMAIL: ece651.group10@gmail.com
+      TZ: "America/Toronto"
+      
 #      ENV: E2E
 
   mongodb:
@@ -24,13 +47,23 @@ services:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: admin
       MONGO_INITDB_DATABASE: focusbuddy
+      TZ: "America/Toronto"
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
       interval: 10s
       retries: 5
       start_period: 30s
       timeout: 10s
-
-
-
+  
+  redis:
+    image: redis:latest
+    ports:
+      - 6379:6379
+    environment:
+      TZ: "America/Toronto"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
