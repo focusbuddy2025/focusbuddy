@@ -259,7 +259,6 @@ class NotificationAPI(BaseAPI):
 
     def __init__(self, cfg: Config):
         super().__init__(cfg)
-        self.router = APIRouter()
         self.notification_service = NotificationService(cfg)
         self._register_routes()
 

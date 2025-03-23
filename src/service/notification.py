@@ -40,6 +40,8 @@ class NotificationService(object):
             update_operation = {"$set": {"notification.browser": enabled}}
         elif notification_type == "email":
             update_operation = {"$set": {"notification.email_notification": enabled}}
+        else:
+            raise ValueError(f"Unrecognized notification type: {notification_type}")
 
         result = collection.update_one(query_filter, update_operation)
         return result.modified_count > 0
@@ -174,7 +176,7 @@ class NotificationService(object):
             user_id = str(user["_id"])
             email = user["email"]
 
-            # Query completed sessions for this user (session_status == 3)
+            # Query completed sessions for this user
             sessions = list(
                 focus_collection.find({"user_id": user_id, "session_status": 3})
             )
@@ -183,7 +185,6 @@ class NotificationService(object):
             sessions_in_week = []
             for s in sessions:
                 try:
-                    # Make session_date timezone-aware.
                     session_date = datetime.strptime(
                         s["start_date"], "%m/%d/%Y"
                     ).replace(tzinfo=ZoneInfo("America/Toronto"))
@@ -196,14 +197,12 @@ class NotificationService(object):
             if not sessions_in_week:
                 continue
 
-            # Aggregate sessions by day and session_type.
             # day_data maps day_name -> { session_type -> total duration }
             day_data = defaultdict(lambda: {0: 0, 1: 0, 2: 0, 3: 0})
             for s in sessions_in_week:
                 try:
                     session_date = datetime.strptime(s["start_date"], "%m/%d/%Y")
                     day_name = session_date.strftime("%A")
-                    # Assume 'duration' is stored in minutes and 'session_type' is an integer.
                     stype = s.get("session_type", 3)
                     day_data[day_name][stype] += s.get("duration", 0) - (
                         math.floor(s.get("remaining_focus_time", 0) / 60)
@@ -212,7 +211,6 @@ class NotificationService(object):
                     print(f"Error processing session {s['_id']}: {e}")
                     continue
 
-            # Build a textual summary for the email.
             summary_lines = []
             for day, type_data in day_data.items():
                 total = sum(type_data.values())

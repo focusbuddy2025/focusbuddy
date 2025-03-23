@@ -15,7 +15,7 @@ celery_app.conf.update(
         "weekly-summary-job": {
             "task": "src.service.weekly_summary_task",
             # Run every Monday at midnight (00:00)
-            "schedule": crontab(day_of_week="sat", minute="*/5"),
+            "schedule": crontab(day_of_week="mon", hour=0, minute=0),
         },
     },
 )
