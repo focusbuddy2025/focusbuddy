@@ -156,3 +156,8 @@ class GetNextFocusSessionResponse(BaseModel):
 class GetAllFocusSessionResponse(BaseModel):
     focus_sessions: list[GetFocusSessionResponse]
     status: ResponseStatus = ResponseStatus.SUCCESS
+
+
+class NotificationUpdateRequest(BaseModel):
+    type: str
+    enabled: bool
