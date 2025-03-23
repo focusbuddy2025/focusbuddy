@@ -45,7 +45,7 @@ class MongoDB:
                 ],
             )
             cls._instance._init_index(
-                "analytics",
+                "user",
                 [
                     ("user_id", ASCENDING),
                 ],

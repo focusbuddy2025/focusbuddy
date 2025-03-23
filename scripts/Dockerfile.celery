@@ -1,0 +1,15 @@
+# Dockerfile: Celery Worker Container
+FROM python:3.9-alpine
+
+# Set a working directory (adjust as needed)
+WORKDIR /app/focusbuddy
+
+# Copy project files into the container
+COPY . .
+
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+EXPOSE 5555
+
+CMD ["celery", "-A", "src.service.celery.celery_app", "worker", "--beat", "--loglevel=debug"]
