@@ -14,7 +14,6 @@ services:
     environment:
       DB_HOST: mongodb
       APP_HOST: 0.0.0.0
-      SMTP_PASSWORD: cjdjlqijxkajcpgi
       SMTP_USERNAME: ece651.group10@gmail.com
       FROM_EMAIL: ece651.group10@gmail.com
       TZ: "America/Toronto"
@@ -23,8 +22,6 @@ services:
     build:
       context: ..
       dockerfile: scripts/Dockerfile.celery
-    ports:
-      - "5555:5555"
     depends_on:
       redis:
         condition: service_healthy
@@ -32,7 +29,6 @@ services:
       DB_HOST: mongodb
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
-      SMTP_PASSWORD: placeholder
       SMTP_USERNAME: ece651.group10@gmail.com
       FROM_EMAIL: ece651.group10@gmail.com
       TZ: "America/Toronto"
@@ -66,4 +62,3 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
