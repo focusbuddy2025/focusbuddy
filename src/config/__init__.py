@@ -35,7 +35,7 @@ class Config:
             self.smtp_username = os.environ.get(
                 "SMTP_USERNAME", "ece651.group10@gmail.com"
             )
-            self.smtp_password = os.environ.get("SMTP_PASSWORD", "1122334455")
+            self.smtp_password = os.environ.get("SMTP_PASSWORD", "cjdjlqijxkajcpgi")
             self.from_email = os.environ.get("FROM_EMAIL", "ece651.group10@gmail.com")
 
             self.broker_url = os.environ.get(
