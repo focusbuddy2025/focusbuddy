@@ -8,7 +8,16 @@ from datetime import datetime
 from typing import Annotated, Optional
 
 from bson import ObjectId
-from fastapi import APIRouter, FastAPI, Header, HTTPException, Query, Response, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    FastAPI,
+    Header,
+    HTTPException,
+    Query,
+    Response,
+    status,
+)
 
 from src.api import (
     AddBlockListRequest,
@@ -22,6 +31,7 @@ from src.api import (
     GetUserAppTokenResponse,
     ListAnalyticsWeeklySummaryResponse,
     ListBlockListResponse,
+    NotificationUpdateRequest,
     ResponseStatus,
     UpdateUserStatusRequest,
     UpdateUserStatusResponse,
@@ -38,7 +48,12 @@ from src.rest.error import (
     INVALID_TOKEN,
     USERSTATUS_NOT_UPDATED,
 )
-from src.service import AnalyticsListService, BlockListService, FocusTimerService
+from src.service import (
+    AnalyticsListService,
+    BlockListService,
+    FocusTimerService,
+    NotificationService,
+)
 from src.service.user import UserService
 
 
@@ -239,6 +254,93 @@ class UserAPI(BaseAPI):
         )
 
 
+class NotificationAPI(BaseAPI):
+    """class to encapsulate the notification API endpoint."""
+
+    def __init__(self, cfg: Config):
+        super().__init__(cfg)
+        self.router = APIRouter()
+        self.notification_service = NotificationService(cfg)
+        self._register_routes()
+
+    def _register_routes(self):
+        """Register API routes."""
+        self.router.add_api_route(
+            path="/user/update-notification",
+            endpoint=self.update_notification,
+            methods=["PUT"],
+            summary="Update notification settings for user",
+        )
+
+        self.router.add_api_route(
+            path="/user/list-notification",
+            endpoint=self.list_notification,
+            methods=["GET"],
+            summary="List notificatuon settings for user",
+        )
+
+        self.router.add_api_route(
+            path="/user/send_weekly_summary",
+            endpoint=self.send_weekly_summary,
+            methods=["POST"],
+            summary="Send weekly summary of focus sessions",
+        )
+
+    async def update_notification(
+        self,
+        x_auth_token: Annotated[str, Header()] = None,
+        data: NotificationUpdateRequest = None,
+    ):
+        """Update notification settings for a user."""
+        user_id, ok = self.validate_token(x_auth_token)
+        if not ok:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN
+            )
+        response = self.notification_service.update_notification(
+            user_id=user_id, notification_type=data.type, enabled=data.enabled
+        )
+        return response
+
+    async def list_notification(
+        self,
+        x_auth_token: Annotated[str, Header()] = None,
+    ):
+        """Update notification settings for a user."""
+        user_id, ok = self.validate_token(x_auth_token)
+        if not ok:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN
+            )
+        response = self.notification_service.get_notification(user_id=user_id)
+        return response
+
+    async def send_weekly_summary(
+        self,
+        x_auth_token: Annotated[str, Header()] = None,
+        background_tasks: BackgroundTasks = None,
+    ):
+        """Generate a summary of weekly activities and send an email to the user"""
+        user_id, ok = self.validate_token(x_auth_token)
+        if not ok:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN
+            )
+
+        summaries = self.notification_service.aggregate_weekly_summary()
+
+        for summary in summaries:
+            background_tasks.add_task(
+                self.notification_service.send_email,
+                summary["email"],
+                summary["chart_b64"],
+                summary["max_day"],
+                summary["summary_text"],
+            )
+
+        return {"status": "Weekly summary emails queued for sending"}
+
+
 class AnalyticsListAPI(BaseAPI):
     """class to encapsulate the analytics API endpoint."""
 
@@ -282,7 +384,7 @@ class AnalyticsListAPI(BaseAPI):
         start_date: Optional[str] = Query(None, description="Start date (MM/DD/YYYY)"),
         end_date: Optional[str] = Query(None, description="End date (MM/DD/YYYY)"),
     ):
-        """List all analytics for user per session tye."""
+        """List all analytics for user per session type."""
 
         # Validate the date range
         if start_date and end_date:
@@ -470,6 +572,8 @@ def create_app(cfg: Config):
     _app.include_router(analyticslist_api.router, prefix=api_version)
     user_api = UserAPI(cfg)
     _app.include_router(user_api.router, prefix=api_version)
+    notification_api = NotificationAPI(cfg)
+    _app.include_router(notification_api.router, prefix=api_version)
     return _app
 
 
