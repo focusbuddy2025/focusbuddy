@@ -32,7 +32,7 @@ services:
       SMTP_USERNAME: ece651.group10@gmail.com
       FROM_EMAIL: ece651.group10@gmail.com
       TZ: "America/Toronto"
-      
+
 #      ENV: E2E
 
   mongodb:
@@ -50,7 +50,7 @@ services:
       retries: 5
       start_period: 30s
       timeout: 10s
-  
+
   redis:
     image: redis:latest
     ports:
