@@ -1,4 +1,0 @@
-pymongo >=4.11
-typer >= 0.15.1
-rich >= 13.9.4
-testcontainers>=4.9.1
