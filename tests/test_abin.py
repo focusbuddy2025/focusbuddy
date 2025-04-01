@@ -388,3 +388,11 @@ class TestFocusTimer(unittest.TestCase):
             "focus_sessions": [],
             "status": ResponseStatus.SUCCESS,
         }
+
+    def test_get_all_focustimer_c(self):
+        response = self.app.get("/api/v1/focustimer", headers={"x-auth-token": self.jwt_token})
+        assert response.status_code == 200
+        assert response.json() == {
+            "focus_sessions": [],
+            "status": ResponseStatus.SUCCESS,
+        }
