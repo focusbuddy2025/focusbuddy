@@ -211,12 +211,12 @@ class TestWeeklyAggregateSummary(unittest.TestCase):
         summary = summaries[0]
         self.assertEqual(summary["email"], "focusbuddy.test@gmail.com")
 
-        self.assertTrue(len(summary["summary_text"]) > 0)
+        self.assertGreater(len(summary["summary_text"]), 0)
 
-        self.assertTrue(len(summary["chart_b64"]) > 0)
+        self.assertGreater(len(summary["chart_b64"]), 0)
 
         decoded_img = base64.b64decode(summary["chart_b64"])
-        self.assertTrue(decoded_img.startswith(b"\x89PNG\r\n\x1a\n"))
+        self.assertTrue(decoded_img.startswith(b"\x89PNG\r\n\x1a\n"), "Decoded image does not start with PNG header")
 
         expected_days = [
             "Monday",
