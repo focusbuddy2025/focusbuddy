@@ -22,7 +22,7 @@ celery_app.conf.update(
 
 
 @celery_app.task(name="src.service.weekly_summary_task")
-def weekly_summary_task():
+def weekly_summary_task():  # pragma: no cover
     """
     Celery task to run the weekly summary job.
     """

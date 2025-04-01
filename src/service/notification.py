@@ -52,6 +52,8 @@ class NotificationService(object):
         day_data is a dict mapping day names to another dict of session types and durations.
         Returns a base64-encoded PNG and the day with the highest total duration.
         """
+        if len(day_data) == 0:
+            return "", ""
         # Define the expected order and labels
         week_order = [
             "Monday",
