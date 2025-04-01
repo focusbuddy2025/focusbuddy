@@ -493,7 +493,7 @@ class FocusTimerAPI(BaseAPI):
                 status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_TOKEN
             )
 
-        updates = {k: v for k, v in request.dict().items() if v is not None}
+        updates = {k: v for k, v in request.model_dump().items() if v is not None}
         if not updates:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail=FOCUSSESSION_NOT_UPDATED
