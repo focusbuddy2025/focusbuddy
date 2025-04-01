@@ -187,7 +187,3 @@ class TestFocusTimer(unittest.TestCase):
         response = self.app.delete(f"/api/v1/focustimer/{str(ObjectId())}", headers={"x-auth-token": self.jwt_token})
         assert response.status_code == 404
 
-    @classmethod
-    def tearDownClass(cls):
-        """Close Mongo client after all tests."""
-        MongoDB().close()
